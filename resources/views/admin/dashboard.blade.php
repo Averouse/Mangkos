@@ -167,6 +167,9 @@
                                         </td>
                                         <td class="px-6 py-4 text-right">
                                             <div class="flex gap-2 justify-end">
+                                                <button onclick="viewUserDetails({{ $user->id }})" class="bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-600 transition">
+                                                    <i class="fas fa-eye mr-1"></i> Details
+                                                </button>
                                                 <button onclick="approveUser({{ $user->id }})" class="bg-green-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-green-600 transition">
                                                     <i class="fas fa-check mr-1"></i> Approve
                                                 </button>
@@ -202,7 +205,7 @@
                                         <th class="px-6 py-4">Contact</th>
                                         <th class="px-6 py-4">ID Photo</th>
                                         <th class="px-6 py-4">Approved</th>
-                                        <th class="px-6 py-4 text-right">Status</th>
+                                        <th class="px-6 py-4 text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
@@ -222,22 +225,31 @@
                                             <p class="text-xs text-gray-500">{{ $user->phone ?? 'No phone' }}</p>
                                         </td>
                                         <td class="px-6 py-4">
-                                            @if($user->role === 'user' && $user->photo)
-                                                <img src="/uploads/ktm/{{ $user->photo }}" class="w-16 h-10 object-cover rounded border cursor-pointer hover:opacity-75 transition" onclick="openPhotoModal('/uploads/ktm/{{ $user->photo }}', '{{ $user->name }} - KTM')">
-                                            @elseif($user->role === 'owner' && $user->ktp_photo)
-                                                <img src="/uploads/ktp/{{ $user->ktp_photo }}" class="w-16 h-10 object-cover rounded border cursor-pointer hover:opacity-75 transition" onclick="openPhotoModal('/uploads/ktp/{{ $user->ktp_photo }}', '{{ $user->name }} - KTP')">
-                                            @else
-                                                <span class="text-xs text-gray-400">No photo</span>
-                                            @endif
+                                            <div class="flex gap-2">
+                                                @if($user->id_card_photo)
+                                                    <img src="/uploads/ktp/{{ $user->id_card_photo }}" class="w-12 h-8 object-cover rounded border cursor-pointer hover:opacity-75 transition" onclick="openPhotoModal('/uploads/ktp/{{ $user->id_card_photo }}", '{{ $user->name }} - KTP')" title="KTP">
+                                                @endif
+                                                @if($user->selfie_with_id_photo)
+                                                    <img src="/uploads/ktp/{{ $user->selfie_with_id_photo }}" class="w-12 h-8 object-cover rounded border cursor-pointer hover:opacity-75 transition" onclick="openPhotoModal('/uploads/ktp/{{ $user->selfie_with_id_photo }}', '{{ $user->name }} - Selfie with KTP')" title="Selfie with KTP">
+                                                @endif
+                                                @if(!$user->id_card_photo && !$user->selfie_with_id_photo)
+                                                    <span class="text-xs text-gray-400">No photos uploaded</span>
+                                                @endif
+                                            </div>
                                         </td>
                                         <td class="px-6 py-4">
                                             <p class="text-sm text-gray-800">{{ $user->updated_at->format('d M Y') }}</p>
                                             <p class="text-xs text-gray-500">{{ $user->updated_at->diffForHumans() }}</p>
                                         </td>
                                         <td class="px-6 py-4 text-right">
-                                            <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">
-                                                <i class="fas fa-check-circle mr-1"></i> Verified
-                                            </span>
+                                            <div class="flex gap-2 justify-end">
+                                                <button onclick="viewUserDetails({{ $user->id }})" class="bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-600 transition">
+                                                    <i class="fas fa-eye mr-1"></i> Details
+                                                </button>
+                                                <span class="bg-green-100 text-green-700 px-3 py-1.5 rounded-lg text-xs font-bold">
+                                                    <i class="fas fa-check-circle mr-1"></i> Verified
+                                                </span>
+                                            </div>
                                         </td>
                                     </tr>
                                     @endforeach
@@ -291,15 +303,24 @@
                                             <p class="text-xs text-gray-500">{{ $user->major ?? 'No major' }} • {{ $user->year ?? 'No year' }}</p>
                                         </td>
                                         <td class="px-6 py-4">
-                                            @if($user->photo)
-                                                <img src="/uploads/ktm/{{ $user->photo }}" class="w-16 h-10 object-cover rounded border cursor-pointer hover:opacity-75 transition" onclick="openPhotoModal('/uploads/ktm/{{ $user->photo }}', '{{ $user->name }} - KTM')">
-                                            @else
-                                                <span class="text-xs text-gray-400">No KTM uploaded</span>
-                                            @endif
+                                            <div class="flex gap-1">
+                                                @if($user->id_card_photo)
+                                                    <img src="/uploads/ktm/{{ $user->id_card_photo }}" class="w-8 h-6 object-cover rounded border cursor-pointer hover:opacity-75 transition" onclick="openPhotoModal('/uploads/ktm/{{ $user->id_card_photo }}', '{{ $user->name }} - KTM Card')" title="KTM Card">
+                                                @endif
+                                                @if($user->selfie_with_id_photo)
+                                                    <img src="/uploads/ktm/{{ $user->selfie_with_id_photo }}" class="w-8 h-6 object-cover rounded border cursor-pointer hover:opacity-75 transition" onclick="openPhotoModal('/uploads/ktm/{{ $user->selfie_with_id_photo }}', '{{ $user->name }} - Selfie with KTM')" title="Selfie">
+                                                @endif
+                                                @if(!$user->id_card_photo && !$user->selfie_with_id_photo)
+                                                    <span class="text-xs text-gray-400">No photos</span>
+                                                @endif
+                                            </div>
                                         </td>
                                         <td class="px-6 py-4 text-right">
                                             <div class="flex gap-2 justify-end">
-                                                <button onclick="approveUser({{ $user->id }})" class="bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-600 transition">
+                                                <button onclick="viewUserDetails({{ $user->id }})" class="bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-600 transition">
+                                                    <i class="fas fa-eye mr-1"></i> Details
+                                                </button>
+                                                <button onclick="approveUser({{ $user->id }})" class="bg-green-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-green-600 transition">
                                                     <i class="fas fa-check mr-1"></i> Approve
                                                 </button>
                                                 <button onclick="rejectUser({{ $user->id }})" class="bg-red-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-600 transition">
@@ -355,11 +376,17 @@
                                             <p class="text-xs text-gray-500">{{ $user->phone ?? 'No phone' }}</p>
                                         </td>
                                         <td class="px-6 py-4">
-                                            @if($user->ktp_photo)
-                                                <img src="/uploads/ktp/{{ $user->ktp_photo }}" class="w-16 h-10 object-cover rounded border cursor-pointer hover:opacity-75 transition" onclick="openPhotoModal('/uploads/ktp/{{ $user->ktp_photo }}', '{{ $user->name }} - KTP')">
-                                            @else
-                                                <span class="text-xs text-gray-400">No KTP uploaded</span>
-                                            @endif
+                                            <div class="flex gap-1">
+                                                @if($user->id_card_photo)
+                                                    <img src="/uploads/ktp/{{ $user->id_card_photo }}" class="w-8 h-6 object-cover rounded border cursor-pointer hover:opacity-75 transition" onclick="openPhotoModal('/uploads/ktp/{{ $user->id_card_photo }}', '{{ $user->name }} - KTP Card')" title="KTP Card">
+                                                @endif
+                                                @if($user->selfie_with_id_photo)
+                                                    <img src="/uploads/ktp/{{ $user->selfie_with_id_photo }}" class="w-8 h-6 object-cover rounded border cursor-pointer hover:opacity-75 transition" onclick="openPhotoModal('/uploads/ktp/{{ $user->selfie_with_id_photo }}', '{{ $user->name }} - Selfie with KTP')" title="Selfie">
+                                                @endif
+                                                @if(!$user->id_card_photo && !$user->selfie_with_id_photo)
+                                                    <span class="text-xs text-gray-400">No photos</span>
+                                                @endif
+                                            </div>
                                         </td>
                                         <td class="px-6 py-4">
                                             <p class="text-sm text-gray-800">{{ $user->created_at->format('d M Y') }}</p>
@@ -367,7 +394,10 @@
                                         </td>
                                         <td class="px-6 py-4 text-right">
                                             <div class="flex gap-2 justify-end">
-                                                <button onclick="approveUser({{ $user->id }})" class="bg-orange-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-orange-600 transition">
+                                                <button onclick="viewUserDetails({{ $user->id }})" class="bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-600 transition">
+                                                    <i class="fas fa-eye mr-1"></i> Details
+                                                </button>
+                                                <button onclick="approveUser({{ $user->id }})" class="bg-green-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-green-600 transition">
                                                     <i class="fas fa-check mr-1"></i> Approve
                                                 </button>
                                                 <button onclick="rejectUser({{ $user->id }})" class="bg-red-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-600 transition">
@@ -437,6 +467,9 @@
                                         </td>
                                         <td class="px-6 py-4 text-right">
                                             <div class="flex gap-2 justify-end">
+                                                <button onclick="viewKostDetails({{ $kost->id }})" class="bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-600 transition">
+                                                    <i class="fas fa-eye mr-1"></i> Details
+                                                </button>
                                                 <button onclick="approveKost({{ $kost->id }})" class="bg-purple-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-purple-600 transition">
                                                     <i class="fas fa-check mr-1"></i> Approve
                                                 </button>
@@ -460,7 +493,7 @@
                 </div>
             </div>
 
-            <!-- APPROVED USERS VIEW -->
+            <!-- APPROVED USERS (KTM) VIEW -->
             <div id="view-approved-users" class="hidden">
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     @php $approvedUsersList = $approvedUsers->where('role', 'user'); @endphp
@@ -474,6 +507,7 @@
                                         <th class="px-6 py-4">Campus Info</th>
                                         <th class="px-6 py-4">KTM Photo</th>
                                         <th class="px-6 py-4">Approved Date</th>
+                                        <th class="px-6 py-4 text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
@@ -507,6 +541,11 @@
                                             <p class="text-sm text-gray-800">{{ $user->updated_at->format('d M Y') }}</p>
                                             <p class="text-xs text-gray-500">{{ $user->updated_at->diffForHumans() }}</p>
                                         </td>
+                                        <td class="px-6 py-4 text-right">
+                                            <button onclick="viewUserDetails({{ $user->id }})" class="bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-600 transition">
+                                                <i class="fas fa-eye mr-1"></i> Details
+                                            </button>
+                                        </td>
                                     </tr>
                                     @endforeach
                                 </tbody>
@@ -536,6 +575,7 @@
                                         <th class="px-6 py-4">KTP Photo</th>
                                         <th class="px-6 py-4">Approved Date</th>
                                         <th class="px-6 py-4">Kost Count</th>
+                                        <th class="px-6 py-4 text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
@@ -555,11 +595,17 @@
                                             <p class="text-xs text-gray-500">{{ $user->phone ?? 'No phone' }}</p>
                                         </td>
                                         <td class="px-6 py-4">
-                                            @if($user->ktp_photo)
-                                                <img src="/uploads/ktp/{{ $user->ktp_photo }}" class="w-16 h-10 object-cover rounded border cursor-pointer hover:opacity-75 transition" onclick="openPhotoModal('/uploads/ktp/{{ $user->ktp_photo }}', '{{ $user->name }} - KTP')">
-                                            @else
-                                                <span class="text-xs text-gray-400">No KTP</span>
-                                            @endif
+                                            <div class="flex gap-2">
+                                                @if($user->id_card_photo)
+                                                    <img src="/uploads/ktp/{{ $user->id_card_photo }}" class="w-12 h-8 object-cover rounded border cursor-pointer hover:opacity-75 transition" onclick="openPhotoModal('/uploads/ktp/{{ $user->id_card_photo }}", '{{ $user->name }} - KTP')" title="KTP">
+                                                @endif
+                                                @if($user->selfie_with_id_photo)
+                                                    <img src="/uploads/ktp/{{ $user->selfie_with_id_photo }}" class="w-12 h-8 object-cover rounded border cursor-pointer hover:opacity-75 transition" onclick="openPhotoModal('/uploads/ktp/{{ $user->selfie_with_id_photo }}', '{{ $user->name }} - Selfie with KTP')" title="Selfie with KTP">
+                                                @endif
+                                                @if(!$user->id_card_photo && !$user->selfie_with_id_photo)
+                                                    <span class="text-xs text-gray-400">No photos uploaded</span>
+                                                @endif
+                                            </div>
                                         </td>
                                         <td class="px-6 py-4">
                                             <p class="text-sm text-gray-800">{{ $user->updated_at->format('d M Y') }}</p>
@@ -568,6 +614,11 @@
                                         <td class="px-6 py-4">
                                             <p class="text-sm font-bold text-gray-800">{{ $user->kosts->count() ?? 0 }}</p>
                                             <p class="text-xs text-gray-500">Properties</p>
+                                        </td>
+                                        <td class="px-6 py-4 text-right">
+                                            <button onclick="viewUserDetails({{ $user->id }})" class="bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-600 transition">
+                                                <i class="fas fa-eye mr-1"></i> Details
+                                            </button>
                                         </td>
                                     </tr>
                                     @endforeach
@@ -597,6 +648,7 @@
                                         <th class="px-6 py-4">Location</th>
                                         <th class="px-6 py-4">Price & Rooms</th>
                                         <th class="px-6 py-4">Approved Date</th>
+                                        <th class="px-6 py-4 text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
@@ -628,6 +680,11 @@
                                             <p class="text-sm text-gray-800">{{ $kost->updated_at->format('d M Y') }}</p>
                                             <p class="text-xs text-gray-500">{{ $kost->updated_at->diffForHumans() }}</p>
                                         </td>
+                                        <td class="px-6 py-4 text-right">
+                                            <button onclick="viewKostDetails({{ $kost->id }})" class="bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-600 transition">
+                                                <i class="fas fa-eye mr-1"></i> Details
+                                            </button>
+                                        </td>
                                     </tr>
                                     @endforeach
                                 </tbody>
@@ -644,6 +701,37 @@
             </div>
 
         </div>
+
+        <!-- USER DETAILS MODAL -->
+        <div id="userDetailsModal" class="fixed inset-0 z-50 hidden bg-black/50 backdrop-blur-sm">
+            <div class="absolute inset-0 flex items-center justify-center p-4">
+                <div class="bg-white rounded-3xl w-full max-w-3xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold text-gray-800">User Details</h3>
+                        <button onclick="closeUserDetails()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div id="userDetailsContent"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KOST DETAILS MODAL -->
+        <div id="kostDetailsModal" class="fixed inset-0 z-50 hidden bg-black/50 backdrop-blur-sm">
+            <div class="absolute inset-0 flex items-center justify-center p-4">
+                <div class="bg-white rounded-3xl w-full max-w-4xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold text-gray-800">Kost Details</h3>
+                        <button onclick="closeKostDetails()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div id="kostDetailsContent"></div>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <!-- PHOTO MODAL -->
@@ -773,6 +861,80 @@
             }
         }
 
+        function viewUserDetails(userId) {
+            const pendingUsers = @json($pendingUsers ?? []);
+            const approvedUsers = @json($approvedUsers ?? []);
+            const allUsers = [...pendingUsers, ...approvedUsers];
+            const user = allUsers.find(u => u.id === userId);
+            
+            if (!user) return;
+            
+            const photoFolder = user.role === 'user' ? 'ktm' : 'ktp';
+            const idLabel = user.role === 'user' ? 'KTM' : 'KTP';
+            
+            const content = `
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-bold text-gray-700 mb-4">Personal Information</h4>
+                        <div class="space-y-3">
+                            <div><strong>Name:</strong> ${user.name}</div>
+                            <div><strong>Email:</strong> ${user.email}</div>
+                            <div><strong>Phone:</strong> ${user.phone || 'Not provided'}</div>
+                            <div><strong>Role:</strong> ${user.role}</div>
+                            <div><strong>Status:</strong> <span class="px-2 py-1 rounded text-xs ${user.status === 'approved' ? 'bg-green-100 text-green-700' : user.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}">${user.status}</span></div>
+                            <div><strong>Registered:</strong> ${new Date(user.created_at).toLocaleDateString()}</div>
+                        </div>
+                        
+                        ${user.role === 'user' ? `
+                        <h4 class="font-bold text-gray-700 mb-4 mt-6">Campus Information</h4>
+                        <div class="space-y-3">
+                            <div><strong>Campus:</strong> ${user.campus || 'Not provided'}</div>
+                            <div><strong>Major:</strong> ${user.major || 'Not provided'}</div>
+                            <div><strong>Year:</strong> ${user.year || 'Not provided'}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-bold text-gray-700 mb-4">${idLabel} Verification Photos</h4>
+                        <div class="space-y-4">
+                            ${user.id_card_photo ? `
+                            <div>
+                                <p class="text-sm font-medium mb-2">${idLabel} Card:</p>
+                                <img src="/uploads/${photoFolder}/${user.id_card_photo}" class="w-full h-40 object-cover rounded border cursor-pointer" onclick="openPhotoModal('/uploads/${photoFolder}/${user.id_card_photo}', '${user.name} - ${idLabel} Card')">
+                            </div>
+                            ` : `<p class="text-gray-500">No ${idLabel} photo uploaded</p>`}
+                            
+                            ${user.selfie_with_id_photo ? `
+                            <div>
+                                <p class="text-sm font-medium mb-2">Selfie with ${idLabel}:</p>
+                                <img src="/uploads/${photoFolder}/${user.selfie_with_id_photo}" class="w-full h-40 object-cover rounded border cursor-pointer" onclick="openPhotoModal('/uploads/${photoFolder}/${user.selfie_with_id_photo}', '${user.name} - Selfie with ${idLabel}')">
+                            </div>
+                            ` : `<p class="text-gray-500">No selfie photo uploaded</p>`}
+                        </div>
+                    </div>
+                </div>
+                
+                ${user.status === 'pending' ? `
+                <div class="mt-8 flex gap-3 justify-end">
+                    <button onclick="approveUser(${user.id})" class="bg-green-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-600 transition">
+                        <i class="fas fa-check mr-2"></i> Approve User
+                    </button>
+                    <button onclick="rejectUser(${user.id})" class="bg-red-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-red-600 transition">
+                        <i class="fas fa-times mr-2"></i> Reject User
+                    </button>
+                </div>
+                ` : ''}
+            `;
+            
+            document.getElementById('userDetailsContent').innerHTML = content;
+            document.getElementById('userDetailsModal').classList.remove('hidden');
+        }
+
+        function closeUserDetails() {
+            document.getElementById('userDetailsModal').classList.add('hidden');
+        }
+
         function approveKost(kostId) {
             if (confirm('Approve this kost?')) {
                 fetch(`/admin/kosts/${kostId}/approve`, {
@@ -829,6 +991,77 @@
                     alert('An error occurred. Please try again.');
                 });
             }
+        }
+
+        function viewKostDetails(kostId) {
+            // Find kost data from the page
+            const pendingKosts = @json($pendingKosts ?? []);
+            const approvedKosts = @json($approvedKosts ?? []);
+            const kostData = [...pendingKosts, ...approvedKosts];
+            const kost = kostData.find(k => k.id === kostId);
+            
+            if (!kost) return;
+            
+            const content = `
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-bold text-gray-700 mb-4">Basic Information</h4>
+                        <div class="space-y-3">
+                            <div><strong>Name:</strong> ${kost.name}</div>
+                            <div><strong>Address:</strong> ${kost.address}</div>
+                            <div><strong>Price:</strong> Rp ${new Intl.NumberFormat('id-ID').format(kost.price)}/month</div>
+                            <div><strong>Type:</strong> ${kost.type}</div>
+                            <div><strong>Total Rooms:</strong> ${kost.total_rooms}</div>
+                            <div><strong>Description:</strong> ${kost.description || 'No description'}</div>
+                        </div>
+                        
+                        <h4 class="font-bold text-gray-700 mb-4 mt-6">Owner Information</h4>
+                        <div class="space-y-3">
+                            <div><strong>Owner:</strong> ${kost.owner.name}</div>
+                            <div><strong>Email:</strong> ${kost.owner.email}</div>
+                        </div>
+                        
+                        <h4 class="font-bold text-gray-700 mb-4 mt-6">Facilities</h4>
+                        <div class="flex flex-wrap gap-2">
+                            ${kost.facilities ? kost.facilities.map(f => `<span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">${f}</span>`).join('') : 'No facilities listed'}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-bold text-gray-700 mb-4">Photos</h4>
+                        <div class="grid grid-cols-2 gap-3">
+                            ${kost.photos && kost.photos.length > 0 ? 
+                                kost.photos.map(photo => `<img src="/uploads/kosts/${photo}" class="w-full h-32 object-cover rounded border cursor-pointer" onclick="openPhotoModal('/uploads/kosts/${photo}', '${kost.name} - Photo')">`).join('') : 
+                                '<p class="text-gray-500 col-span-2">No photos uploaded</p>'
+                            }
+                        </div>
+                        
+                        ${kost.latitude && kost.longitude ? `
+                        <h4 class="font-bold text-gray-700 mb-4 mt-6">Location</h4>
+                        <div class="space-y-2">
+                            <div><strong>Latitude:</strong> ${kost.latitude}</div>
+                            <div><strong>Longitude:</strong> ${kost.longitude}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <div class="mt-8 flex gap-3 justify-end">
+                    <button onclick="approveKost(${kost.id})" class="bg-green-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-600 transition">
+                        <i class="fas fa-check mr-2"></i> Approve Kost
+                    </button>
+                    <button onclick="rejectKost(${kost.id})" class="bg-red-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-red-600 transition">
+                        <i class="fas fa-times mr-2"></i> Reject Kost
+                    </button>
+                </div>
+            `;
+            
+            document.getElementById('kostDetailsContent').innerHTML = content;
+            document.getElementById('kostDetailsModal').classList.remove('hidden');
+        }
+
+        function closeKostDetails() {
+            document.getElementById('kostDetailsModal').classList.add('hidden');
         }
 
     </script>

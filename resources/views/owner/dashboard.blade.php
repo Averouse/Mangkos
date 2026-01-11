@@ -99,8 +99,8 @@
                             <i class="fas fa-bed"></i>
                         </div>
                         <div>
-                            <p class="text-gray-400 text-xs uppercase font-bold">Kamar Terisi</p>
-                            <h3 class="text-2xl font-bold text-gray-800">{{ $occupiedRooms }} <span class="text-sm text-gray-400 font-normal">/ {{ $totalRooms }}</span></h3>
+                            <p class="text-gray-400 text-xs uppercase font-bold">Kost Aktif</p>
+                            <h3 class="text-2xl font-bold text-gray-800">{{ $kosts->where('status', 'approved')->count() }}</h3>
                         </div>
                     </div>
                 </div>
@@ -111,7 +111,7 @@
                             <i class="fas fa-clock"></i>
                         </div>
                         <div>
-                            <p class="text-gray-400 text-xs uppercase font-bold">Pending</p>
+                            <p class="text-gray-400 text-xs uppercase font-bold">Kost Pending</p>
                             <h3 class="text-2xl font-bold text-gray-800">{{ $kosts->where('status', 'pending')->count() }}</h3>
                         </div>
                     </div>
@@ -123,13 +123,18 @@
                 <div class="p-6 border-b border-gray-100">
                     <h2 class="text-lg font-bold text-gray-800">Daftar Kost Anda</h2>
                 </div>
-                
                 @if($kosts->count() > 0)
                     <div class="divide-y divide-gray-100">
                         @foreach($kosts as $kost)
                         <div class="p-6 flex items-center gap-4 hover:bg-gray-50 transition">
-                            <div class="w-16 h-16 bg-gray-200 rounded-xl flex items-center justify-center">
-                                <i class="fas fa-building text-gray-400 text-xl"></i>
+                            <div class="w-16 h-16 bg-gray-200 rounded-xl overflow-hidden">
+                                @if($kost->photos && count($kost->photos) > 0)
+                                    <img src="/uploads/kosts/{{ $kost->photos[0] }}" class="w-full h-full object-cover" alt="{{ $kost->name }}">
+                                @else
+                                    <div class="w-full h-full flex items-center justify-center">
+                                        <i class="fas fa-building text-gray-400 text-xl"></i>
+                                    </div>
+                                @endif
                             </div>
                             
                             <div class="flex-1">
@@ -144,13 +149,24 @@
                                         <span class="px-2 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-bold">Ditolak</span>
                                     @endif
                                     <span class="px-2 py-1 bg-gray-100 text-gray-600 rounded-lg text-xs">{{ ucfirst($kost->type) }}</span>
+                                    @if($kost->is_full)
+                                        <span class="px-2 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-bold">PENUH</span>
+                                    @endif
                                 </div>
                             </div>
                             
                             <div class="text-right">
                                 <p class="text-xs text-gray-400">Harga Sewa</p>
                                 <p class="font-bold text-mangkos-dark">Rp {{ number_format($kost->price, 0, ',', '.') }}</p>
-                                <p class="text-xs text-gray-500 mt-1">{{ $kost->available_rooms }}/{{ $kost->total_rooms }} kamar tersedia</p>
+                                <p class="text-xs text-gray-500 mt-1">{{ $kost->total_rooms }} kamar total</p>
+                                <div class="flex gap-2 mt-2">
+                                    <button onclick="toggleFull({{ $kost->id }})" class="bg-{{ $kost->is_full ? 'green' : 'red' }}-500 text-white px-2 py-1 rounded text-xs hover:opacity-80 transition">
+                                        {{ $kost->is_full ? 'Set Available' : 'Set Full' }}
+                                    </button>
+                                    <button onclick="viewKostDetails({{ $kost->id }})" class="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600 transition">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         @endforeach
@@ -239,18 +255,33 @@
                     
                     <form id="ktpForm" enctype="multipart/form-data">
                         @csrf
-                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 hover:bg-blue-50 transition">
-                            <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-3"></i>
-                            <p class="text-gray-600 font-medium mb-1">Upload Foto KTP</p>
-                            <p class="text-xs text-gray-500 mb-3">JPG, PNG maksimal 2MB</p>
-                            <input type="file" name="ktp_photo" class="hidden" id="ktp-upload" accept="image/*" required>
-                            <label for="ktp-upload" class="bg-blue-100 text-blue-600 px-4 py-2 rounded-lg text-sm font-medium cursor-pointer hover:bg-blue-200 transition">
-                                Pilih File KTP
-                            </label>
-                            <p id="ktp-file-name" class="text-sm text-gray-500 mt-2 hidden"></p>
+                        <div class="space-y-6">
+                            <!-- ID Card Photo -->
+                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 hover:bg-blue-50 transition">
+                                <i class="fas fa-id-card text-3xl text-gray-400 mb-3"></i>
+                                <p class="text-gray-600 font-medium mb-1">Upload Foto KTP</p>
+                                <p class="text-xs text-gray-500 mb-3">Foto KTP saja (JPG, PNG maksimal 2MB)</p>
+                                <input type="file" name="id_card_photo" class="hidden" id="id-card-upload" accept="image/*" required>
+                                <label for="id-card-upload" class="bg-blue-100 text-blue-600 px-4 py-2 rounded-lg text-sm font-medium cursor-pointer hover:bg-blue-200 transition">
+                                    Pilih Foto KTP
+                                </label>
+                                <p id="id-card-file-name" class="text-sm text-gray-500 mt-2 hidden"></p>
+                            </div>
+                            
+                            <!-- Selfie with ID Photo -->
+                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 hover:bg-blue-50 transition">
+                                <i class="fas fa-camera text-3xl text-gray-400 mb-3"></i>
+                                <p class="text-gray-600 font-medium mb-1">Upload Foto Selfie dengan KTP</p>
+                                <p class="text-xs text-gray-500 mb-3">Foto Anda memegang KTP (JPG, PNG maksimal 2MB)</p>
+                                <input type="file" name="selfie_with_id_photo" class="hidden" id="selfie-upload" accept="image/*" required>
+                                <label for="selfie-upload" class="bg-green-100 text-green-600 px-4 py-2 rounded-lg text-sm font-medium cursor-pointer hover:bg-green-200 transition">
+                                    Pilih Foto Selfie
+                                </label>
+                                <p id="selfie-file-name" class="text-sm text-gray-500 mt-2 hidden"></p>
+                            </div>
                         </div>
                         
-                        <div class="mt-4">
+                        <div class="mt-6">
                             <button type="submit" id="ktp-verify-btn" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50" disabled>
                                 <i class="fas fa-shield-check mr-2"></i>
                                 Kirim Verifikasi KTP
@@ -277,7 +308,7 @@
     <div id="addKostModal" class="fixed inset-0 z-50 hidden">
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeModal('addKostModal')"></div>
         <div class="absolute inset-0 flex items-center justify-center p-4">
-            <div class="bg-white rounded-3xl w-full max-w-lg p-6 shadow-2xl">
+            <div class="bg-white rounded-3xl w-full max-w-4xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-xl font-bold text-gray-800">Tambah Kost Baru</h3>
                     <button onclick="closeModal('addKostModal')" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200">
@@ -285,49 +316,175 @@
                     </button>
                 </div>
                 
-                <form id="addKostForm">
+                <form id="addKostForm" enctype="multipart/form-data">
                     @csrf
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-1">Nama Kost</label>
-                            <input type="text" name="name" placeholder="Contoh: Kost Bahagia" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-mangkos-main outline-none transition" required>
-                        </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-1">Alamat</label>
-                            <textarea name="address" placeholder="Alamat lengkap kost" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-mangkos-main outline-none transition" rows="2" required></textarea>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-4">
+                        <!-- Left Column: Basic Info -->
+                        <div class="space-y-4">
+                            <h4 class="font-bold text-gray-700 border-b pb-2">Informasi Dasar</h4>
+                            
                             <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-1">Harga/Bulan</label>
-                                <input type="number" name="price" placeholder="500000" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-mangkos-main outline-none transition" required>
+                                <label class="block text-sm font-bold text-gray-700 mb-1">Nama Kost</label>
+                                <input type="text" name="name" placeholder="Contoh: Kost Bahagia" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-mangkos-main outline-none transition" required>
                             </div>
+                            
                             <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-1">Tipe</label>
-                                <select name="type" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-mangkos-main outline-none transition" required>
-                                    <option value="putra">Putra</option>
-                                    <option value="putri">Putri</option>
-                                    <option value="campur">Campur</option>
-                                </select>
+                                <label class="block text-sm font-bold text-gray-700 mb-1">Alamat Lengkap</label>
+                                <textarea name="address" placeholder="Alamat lengkap kost" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-mangkos-main outline-none transition" rows="3" required></textarea>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-1">Harga/Bulan</label>
+                                    <input type="number" name="price" placeholder="500000" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-mangkos-main outline-none transition" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-1">Tipe</label>
+                                    <select name="type" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-mangkos-main outline-none transition" required>
+                                        <option value="putra">Putra</option>
+                                        <option value="putri">Putri</option>
+                                        <option value="campur">Campur</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-1">Jumlah Kamar</label>
+                                <input type="number" name="total_rooms" placeholder="10" min="1" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-mangkos-main outline-none transition" required>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-1">Deskripsi</label>
+                                <textarea name="description" placeholder="Deskripsi singkat tentang kost..." class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-mangkos-main outline-none transition" rows="3"></textarea>
                             </div>
                         </div>
                         
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-1">Jumlah Kamar</label>
-                            <input type="number" name="total_rooms" placeholder="10" min="1" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-mangkos-main outline-none transition" required>
+                        <!-- Right Column: Photos, Location, Facilities -->
+                        <div class="space-y-4">
+                            
+                            <!-- Photo Gallery -->
+                            <div>
+                                <h4 class="font-bold text-gray-700 border-b pb-2 mb-4">Galeri Foto</h4>
+                                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-mangkos-main hover:bg-green-50 transition">
+                                    <i class="fas fa-images text-3xl text-gray-400 mb-3"></i>
+                                    <p class="text-gray-600 font-medium mb-1">Upload Foto Kost</p>
+                                    <p class="text-xs text-gray-500 mb-3">Pilih beberapa foto (JPG, PNG maksimal 2MB per foto)</p>
+                                    <input type="file" name="photos[]" class="hidden" id="photos-upload" accept="image/*" multiple>
+                                    <label for="photos-upload" class="bg-mangkos-main text-white px-4 py-2 rounded-lg text-sm font-medium cursor-pointer hover:bg-mangkos-dark transition">
+                                        Pilih Foto
+                                    </label>
+                                    <div id="photo-preview" class="mt-4 grid grid-cols-3 gap-2 hidden"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Location -->
+                            <div>
+                                <h4 class="font-bold text-gray-700 border-b pb-2 mb-4">Lokasi di Peta</h4>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-bold text-gray-700 mb-1">Latitude</label>
+                                        <input type="number" name="latitude" step="any" placeholder="-6.8925" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-mangkos-main outline-none transition">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-bold text-gray-700 mb-1">Longitude</label>
+                                        <input type="number" name="longitude" step="any" placeholder="107.6110" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-mangkos-main outline-none transition">
+                                    </div>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-2">Klik pada peta atau masukkan koordinat manual</p>
+                            </div>
+                            
+                            <!-- Facilities -->
+                            <div>
+                                <h4 class="font-bold text-gray-700 border-b pb-2 mb-4">Fasilitas</h4>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" name="facilities[]" value="ac" class="rounded border-gray-300 text-mangkos-main focus:ring-mangkos-main">
+                                        <span class="text-sm">AC</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" name="facilities[]" value="wifi" class="rounded border-gray-300 text-mangkos-main focus:ring-mangkos-main">
+                                        <span class="text-sm">WiFi</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" name="facilities[]" value="kamar_mandi_dalam" class="rounded border-gray-300 text-mangkos-main focus:ring-mangkos-main">
+                                        <span class="text-sm">K.Mandi Dalam</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" name="facilities[]" value="kamar_mandi_luar" class="rounded border-gray-300 text-mangkos-main focus:ring-mangkos-main">
+                                        <span class="text-sm">K.Mandi Luar</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" name="facilities[]" value="dapur" class="rounded border-gray-300 text-mangkos-main focus:ring-mangkos-main">
+                                        <span class="text-sm">Dapur</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" name="facilities[]" value="ruang_tamu" class="rounded border-gray-300 text-mangkos-main focus:ring-mangkos-main">
+                                        <span class="text-sm">Ruang Tamu</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" name="facilities[]" value="parkir" class="rounded border-gray-300 text-mangkos-main focus:ring-mangkos-main">
+                                        <span class="text-sm">Parkir</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" name="facilities[]" value="security" class="rounded border-gray-300 text-mangkos-main focus:ring-mangkos-main">
+                                        <span class="text-sm">Security</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" name="facilities[]" value="laundry" class="rounded border-gray-300 text-mangkos-main focus:ring-mangkos-main">
+                                        <span class="text-sm">Laundry</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" name="facilities[]" value="bebas_jam_malam" class="rounded border-gray-300 text-mangkos-main focus:ring-mangkos-main">
+                                        <span class="text-sm">Bebas Jam Malam</span>
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
                     <div class="mt-8 flex gap-3">
                         <button type="button" onclick="closeModal('addKostModal')" class="flex-1 py-3 text-gray-500 font-medium hover:bg-gray-50 rounded-xl transition">Batal</button>
-                        <button type="submit" class="flex-1 bg-mangkos-main text-white font-bold py-3 rounded-xl hover:bg-mangkos-dark transition">Simpan</button>
+                        <button type="submit" class="flex-1 bg-mangkos-main text-white font-bold py-3 rounded-xl hover:bg-mangkos-dark transition">Simpan Kost</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
+    <!-- KOST DETAILS MODAL -->
+    <div id="kostDetailsModal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeKostDetails()"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl w-full max-w-4xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">Kost Details</h3>
+                    <button onclick="closeKostDetails()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div id="kostDetailsContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT KOST MODAL -->
+    <div id="editKostModal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeEditKost()"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl w-full max-w-4xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">Edit Kost</h3>
+                    <button onclick="closeEditKost()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div id="editKostContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
     <script>
         function openModal(modalId) {
             document.getElementById(modalId).classList.remove('hidden');
@@ -340,6 +497,87 @@
         function showVerificationAlert() {
             alert('Silakan verifikasi KTP terlebih dahulu di menu Profil untuk dapat menambah kost.');
         }
+
+        // Kost Details Modal
+        function viewKostDetails(kostId) {
+            const kostsData = @json($kosts);
+            const kost = kostsData.find(k => k.id === kostId);
+            
+            if (!kost) return;
+            
+            const content = `
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-bold text-gray-700 mb-4">Basic Information</h4>
+                        <div class="space-y-3">
+                            <div><strong>Name:</strong> ${kost.name}</div>
+                            <div><strong>Address:</strong> ${kost.address}</div>
+                            <div><strong>Price:</strong> Rp ${new Intl.NumberFormat('id-ID').format(kost.price)}/month</div>
+                            <div><strong>Type:</strong> ${kost.type}</div>
+                            <div><strong>Total Rooms:</strong> ${kost.total_rooms}</div>
+                            <div><strong>Status:</strong> <span class="px-2 py-1 rounded text-xs ${kost.status === 'approved' ? 'bg-green-100 text-green-700' : kost.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}">${kost.status}</span></div>
+                            <div><strong>Description:</strong> ${kost.description || 'No description'}</div>
+                        </div>
+                        
+                        <h4 class="font-bold text-gray-700 mb-4 mt-6">Facilities</h4>
+                        <div class="flex flex-wrap gap-2">
+                            ${kost.facilities && kost.facilities.length > 0 ? 
+                                kost.facilities.map(f => `<span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">${f}</span>`).join('') : 
+                                'No facilities listed'
+                            }
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-bold text-gray-700 mb-4">Photos</h4>
+                        <div class="grid grid-cols-2 gap-3">
+                            ${kost.photos && kost.photos.length > 0 ? 
+                                kost.photos.map(photo => `<img src="/uploads/kosts/${photo}" class="w-full h-32 object-cover rounded border cursor-pointer" onclick="openPhotoModal('/uploads/kosts/${photo}', '${kost.name} - Photo')">`).join('') : 
+                                '<p class="text-gray-500 col-span-2">No photos uploaded</p>'
+                            }
+                        </div>
+                        
+                        ${kost.latitude && kost.longitude ? `
+                        <h4 class="font-bold text-gray-700 mb-4 mt-6">Location</h4>
+                        <div class="space-y-2">
+                            <div><strong>Latitude:</strong> ${kost.latitude}</div>
+                            <div><strong>Longitude:</strong> ${kost.longitude}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <div class="mt-8 flex gap-3 justify-end">
+                    <button onclick="editKost(${kost.id})" class="bg-orange-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-orange-600 transition">
+                        <i class="fas fa-edit mr-2"></i> Edit Kost
+                    </button>
+                </div>
+            `;
+            
+            document.getElementById('kostDetailsContent').innerHTML = content;
+            document.getElementById('kostDetailsModal').classList.remove('hidden');
+        }
+
+        function closeKostDetails() {
+            document.getElementById('kostDetailsModal').classList.add('hidden');
+        }
+
+        function openPhotoModal(photoUrl, title) {
+            // Simple photo modal - you can enhance this
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4';
+            modal.innerHTML = `
+                <div class="relative max-w-4xl max-h-full">
+                    <button onclick="this.parentElement.parentElement.remove()" class="absolute -top-10 right-0 text-white hover:text-gray-300 text-2xl">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <img src="${photoUrl}" alt="${title}" class="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl">
+                    <p class="text-white text-center mt-4 font-medium">${title}</p>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
 
         document.getElementById('addKostForm').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -366,18 +604,35 @@
                 alert('Terjadi kesalahan. Silakan coba lagi.');
             });
         });
+
         // KTP verification handling
-        document.getElementById('ktp-upload')?.addEventListener('change', function(e) {
-            const verifyBtn = document.getElementById('ktp-verify-btn');
-            const fileName = document.getElementById('ktp-file-name');
-            
+        // Handle both file uploads
+        document.getElementById('id-card-upload')?.addEventListener('change', function(e) {
+            handleFileUpload(e, 'id-card-file-name', 'ID Card');
+            checkBothFiles();
+        });
+
+        document.getElementById('selfie-upload')?.addEventListener('change', function(e) {
+            handleFileUpload(e, 'selfie-file-name', 'Selfie');
+            checkBothFiles();
+        });
+
+        function handleFileUpload(e, fileNameId, type) {
+            const fileName = document.getElementById(fileNameId);
             if (e.target.files && e.target.files[0]) {
                 const file = e.target.files[0];
-                fileName.textContent = `File dipilih: ${file.name}`;
+                fileName.textContent = `${type} dipilih: ${file.name}`;
                 fileName.classList.remove('hidden');
-                verifyBtn.disabled = false;
             }
-        });
+        }
+
+        function checkBothFiles() {
+            const verifyBtn = document.getElementById('ktp-verify-btn');
+            const idCard = document.getElementById('id-card-upload').files[0];
+            const selfie = document.getElementById('selfie-upload').files[0];
+            
+            verifyBtn.disabled = !(idCard && selfie);
+        }
 
         document.getElementById('ktpForm')?.addEventListener('submit', function(e) {
             e.preventDefault();
@@ -401,7 +656,7 @@
                     btn.innerHTML = '<i class="fas fa-check mr-2"></i> Terkirim';
                     btn.classList.remove('bg-blue-600');
                     btn.classList.add('bg-green-600');
-                    alert('KTP berhasil dikirim! Admin akan memverifikasi dalam 1x24 jam.');
+                    alert('Berhasil dikirim! Admin akan memverifikasi dalam 1x24 jam.');
                 } else {
                     alert('Error: ' + data.message);
                     btn.innerHTML = '<i class="fas fa-shield-check mr-2"></i> Kirim Verifikasi KTP';
@@ -415,6 +670,259 @@
                 btn.disabled = false;
             });
         });
+
+        // Photo preview functionality
+        document.getElementById('photos-upload').addEventListener('change', function(e) {
+            const files = e.target.files;
+            const previewContainer = document.getElementById('photo-preview');
+            
+            if (files.length > 0) {
+                previewContainer.innerHTML = '';
+                previewContainer.classList.remove('hidden');
+                
+                Array.from(files).forEach((file, index) => {
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const photoDiv = document.createElement('div');
+                            photoDiv.className = 'relative group';
+                            photoDiv.innerHTML = `
+                                <img src="${e.target.result}" class="w-full h-20 object-cover rounded-lg border border-gray-200">
+                                <div class="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                                    <button type="button" onclick="removePhoto(${index})" class="text-white text-xs bg-red-500 px-2 py-1 rounded">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1 truncate">${file.name}</p>
+                            `;
+                            previewContainer.appendChild(photoDiv);
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+                
+                // Update upload button text
+                const label = document.querySelector('label[for="photos-upload"]');
+                label.innerHTML = `<i class="fas fa-check mr-1"></i> ${files.length} foto dipilih`;
+                label.classList.remove('bg-mangkos-main', 'hover:bg-mangkos-dark');
+                label.classList.add('bg-green-500', 'hover:bg-green-600');
+            }
+        });
+
+        function removePhoto(index) {
+            // This is a simplified version - in a full implementation, you'd need to manage the file list
+            alert('Untuk menghapus foto, pilih ulang foto yang diinginkan');
+        }
+
+        function toggleFull(kostId) {
+            fetch(`/owner/kosts/${kostId}/toggle-full`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            });
+        }
+
+        function editKost(kostId) {
+            const kostsData = @json($kosts);
+            const kost = kostsData.find(k => k.id === kostId);
+            
+            if (!kost) return;
+            
+            const facilitiesOptions = ['ac', 'wifi', 'kamar_mandi_dalam', 'kamar_mandi_luar', 'dapur', 'ruang_tamu', 'parkir', 'security', 'laundry', 'bebas_jam_malam'];
+            
+            const content = `
+                <form id="editKostForm" enctype="multipart/form-data">
+                    <input type="hidden" name="kost_id" value="${kost.id}">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <h4 class="font-bold text-gray-700 border-b pb-2">Basic Information</h4>
+                            
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-1">Nama Kost</label>
+                                <input type="text" name="name" value="${kost.name}" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-500 outline-none transition" required>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-1">Alamat Lengkap</label>
+                                <textarea name="address" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-500 outline-none transition" rows="3" required>${kost.address}</textarea>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-1">Harga/Bulan</label>
+                                    <input type="number" name="price" value="${kost.price}" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-500 outline-none transition" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-1">Tipe</label>
+                                    <select name="type" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-500 outline-none transition" required>
+                                        <option value="putra" ${kost.type === 'putra' ? 'selected' : ''}>Putra</option>
+                                        <option value="putri" ${kost.type === 'putri' ? 'selected' : ''}>Putri</option>
+                                        <option value="campur" ${kost.type === 'campur' ? 'selected' : ''}>Campur</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-1">Jumlah Kamar</label>
+                                <input type="number" name="total_rooms" value="${kost.total_rooms}" min="1" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-500 outline-none transition" required>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-1">Deskripsi</label>
+                                <textarea name="description" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-500 outline-none transition" rows="3">${kost.description || ''}</textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <h4 class="font-bold text-gray-700 border-b pb-2">Photos & Location</h4>
+                            
+                            <!-- Current Photos -->
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Current Photos</label>
+                                <div class="grid grid-cols-3 gap-2" id="currentPhotos">
+                                    ${kost.photos && kost.photos.length > 0 ? 
+                                        kost.photos.map((photo, index) => `
+                                            <div class="relative group">
+                                                <img src="/uploads/kosts/${photo}" class="w-full h-20 object-cover rounded border">
+                                                <button type="button" onclick="removePhoto('${photo}', ${index})" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                                <input type="hidden" name="existing_photos[]" value="${photo}">
+                                            </div>
+                                        `).join('') : 
+                                        '<p class="text-gray-500 col-span-3">No photos uploaded</p>'
+                                    }
+                                </div>
+                            </div>
+                            
+                            <!-- Add New Photos -->
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Add New Photos</label>
+                                <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-orange-500 hover:bg-orange-50 transition">
+                                    <input type="file" name="new_photos[]" class="hidden" id="edit-photos-upload" accept="image/*" multiple>
+                                    <label for="edit-photos-upload" class="bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-medium cursor-pointer hover:bg-orange-600 transition">
+                                        Add Photos
+                                    </label>
+                                    <div id="new-photo-preview" class="mt-4 grid grid-cols-3 gap-2 hidden"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-1">Latitude</label>
+                                    <input type="number" name="latitude" step="any" value="${kost.latitude || ''}" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-500 outline-none transition">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-1">Longitude</label>
+                                    <input type="number" name="longitude" step="any" value="${kost.longitude || ''}" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-500 outline-none transition">
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h4 class="font-bold text-gray-700 mb-4">Fasilitas</h4>
+                                <div class="grid grid-cols-2 gap-3">
+                                    ${facilitiesOptions.map(facility => `
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input type="checkbox" name="facilities[]" value="${facility}" ${kost.facilities && kost.facilities.includes(facility) ? 'checked' : ''} class="rounded border-gray-300 text-orange-500 focus:ring-orange-500">
+                                            <span class="text-sm">${facility.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                                        </label>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-8 flex gap-3">
+                        <button type="button" onclick="closeEditKost()" class="flex-1 py-3 text-gray-500 font-medium hover:bg-gray-50 rounded-xl transition">Batal</button>
+                        <button type="submit" class="flex-1 bg-orange-500 text-white font-bold py-3 rounded-xl hover:bg-orange-600 transition">Update Kost</button>
+                    </div>
+                </form>
+            `;
+            
+            document.getElementById('editKostContent').innerHTML = content;
+            document.getElementById('kostDetailsModal').classList.add('hidden');
+            document.getElementById('editKostModal').classList.remove('hidden');
+            
+            // Add photo preview for new uploads
+            document.getElementById('edit-photos-upload').addEventListener('change', function(e) {
+                const files = e.target.files;
+                const previewContainer = document.getElementById('new-photo-preview');
+                
+                if (files.length > 0) {
+                    previewContainer.innerHTML = '';
+                    previewContainer.classList.remove('hidden');
+                    
+                    Array.from(files).forEach((file) => {
+                        if (file.type.startsWith('image/')) {
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                const photoDiv = document.createElement('div');
+                                photoDiv.className = 'relative';
+                                photoDiv.innerHTML = `
+                                    <img src="${e.target.result}" class="w-full h-20 object-cover rounded border">
+                                    <p class="text-xs text-gray-500 mt-1 truncate">${file.name}</p>
+                                `;
+                                previewContainer.appendChild(photoDiv);
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    });
+                }
+            });
+            
+            // Add form submit handler
+            document.getElementById('editKostForm').addEventListener('submit', handleEditKostSubmit);
+        }
+
+        function removePhoto(photoName, index) {
+            if (confirm('Remove this photo?')) {
+                const photoElement = document.querySelector(`input[value="${photoName}"]`).parentElement;
+                photoElement.remove();
+            }
+        }
+
+        function closeEditKost() {
+            document.getElementById('editKostModal').classList.add('hidden');
+        }
+
+        function handleEditKostSubmit(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const kostId = formData.get('kost_id');
+            
+            fetch(`/owner/kosts/${kostId}/update`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Kost berhasil diupdate! Status kembali ke pending untuk review admin.');
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Terjadi kesalahan. Silakan coba lagi.');
+            });
+        }
+
     </script>
 
 </body>

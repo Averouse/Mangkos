@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\OwnerController;
+use App\Http\Controllers\KostController;
+use App\Http\Controllers\MatchmakingController;
 
 // Landing page
 Route::get('/', function () {
@@ -17,6 +19,10 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+// Kost search route
+Route::get('/kost-search', [KostController::class, 'kostSearch'])->name('kost.search');
+Route::get('/kost/{id}', [KostController::class, 'show'])->name('kost.detail');
 
 // Protected routes
 Route::middleware('auth')->group(function () {
@@ -31,6 +37,19 @@ Route::middleware('auth')->group(function () {
     Route::get('/owner/dashboard', [OwnerController::class, 'dashboard'])->name('owner.dashboard');
     Route::post('/owner/kosts', [OwnerController::class, 'store'])->name('owner.kosts.store');
     Route::post('/owner/ktp-upload', [OwnerController::class, 'uploadKtp'])->name('owner.ktp.upload');
+    // Add this inside the protected routes section
+    Route::post('/user/ktm-upload', [AuthController::class, 'uploadKtm'])->name('user.ktm.upload');
+    Route::post('/owner/kosts/{id}/toggle-full', [OwnerController::class, 'toggleFull'])->name('owner.kosts.toggle-full');
+    Route::post('/owner/kosts/{id}/update', [OwnerController::class, 'update'])->name('owner.kosts.update');
+    
+    // Matchmaking routes
+    Route::get('/matchmaking', [MatchmakingController::class, 'index'])->name('matchmaking.index');
+    Route::get('/matchmaking/kost/{kostId}', [MatchmakingController::class, 'selectKost'])->name('matchmaking.select');
+    Route::post('/matchmaking/profile', [MatchmakingController::class, 'saveProfile'])->name('matchmaking.save');
+    Route::get('/matchmaking/results/{kostId}', [MatchmakingController::class, 'results'])->name('matchmaking.results');
+    
+    // Rental Application routes
+    Route::post('/rental/apply', [KostController::class, 'applyRental'])->name('rental.apply');
 });
 
 // Admin routes

@@ -34,8 +34,8 @@
             <!-- Navigation Menu -->
             <div class="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
                 <a href="{{ route('dashboard') }}" class="text-mangkos-main font-semibold">Dashboard</a>
-                <a href="#" class="hover:text-mangkos-main transition">Pencarian Kos</a>
-                <a href="#" class="hover:text-mangkos-main transition">Matchmaking</a>
+                <a href="{{ route('kost.search') }}" class="hover:text-mangkos-main transition">Pencarian Kos</a>
+                <a href="{{ route('matchmaking.index') }}" class="hover:text-mangkos-main transition">Matchmaking</a>
             </div>
             
             <div class="flex items-center gap-4">
@@ -212,19 +212,34 @@
                         
                         <form id="ktm-form" enctype="multipart/form-data">
                             @csrf
-                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-mangkos-main hover:bg-green-50 transition">
-                                <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-3"></i>
-                                <p class="text-gray-600 font-medium mb-1">Upload Foto KTM</p>
-                                <p class="text-xs text-gray-500 mb-3">JPG, PNG maksimal 2MB</p>
-                                <input type="file" name="ktm_photo" class="hidden" id="ktm-upload" accept="image/*" required>
-                                <label for="ktm-upload" class="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg text-sm font-medium cursor-pointer hover:bg-gray-200 transition">
-                                    Pilih File KTM
-                                </label>
-                                <p id="file-name" class="text-sm text-gray-500 mt-2 hidden"></p>
+                            <div class="space-y-6">
+                                <!-- KTM Card Photo -->
+                                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-mangkos-main hover:bg-green-50 transition">
+                                    <i class="fas fa-id-card text-3xl text-gray-400 mb-3"></i>
+                                    <p class="text-gray-600 font-medium mb-1">Upload Foto KTM</p>
+                                    <p class="text-xs text-gray-500 mb-3">Foto KTM saja (JPG, PNG maksimal 2MB)</p>
+                                    <input type="file" name="ktm_card_photo" class="hidden" id="ktm-card-upload" accept="image/*" required>
+                                    <label for="ktm-card-upload" class="bg-blue-100 text-blue-600 px-4 py-2 rounded-lg text-sm font-medium cursor-pointer hover:bg-blue-200 transition">
+                                        Pilih Foto KTM
+                                    </label>
+                                    <p id="ktm-card-file-name" class="text-sm text-gray-500 mt-2 hidden"></p>
+                                </div>
+                                
+                                <!-- Selfie with KTM Photo -->
+                                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-mangkos-main hover:bg-green-50 transition">
+                                    <i class="fas fa-camera text-3xl text-gray-400 mb-3"></i>
+                                    <p class="text-gray-600 font-medium mb-1">Upload Foto Selfie dengan KTM</p>
+                                    <p class="text-xs text-gray-500 mb-3">Foto Anda memegang KTM (JPG, PNG maksimal 2MB)</p>
+                                    <input type="file" name="ktm_selfie_photo" class="hidden" id="ktm-selfie-upload" accept="image/*" required>
+                                    <label for="ktm-selfie-upload" class="bg-green-100 text-green-600 px-4 py-2 rounded-lg text-sm font-medium cursor-pointer hover:bg-green-200 transition">
+                                        Pilih Foto Selfie
+                                    </label>
+                                    <p id="ktm-selfie-file-name" class="text-sm text-gray-500 mt-2 hidden"></p>
+                                </div>
                             </div>
                             
                             <div class="mt-4">
-                                <button type="submit" id="verify-btn" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                <button type="submit" id="verify-btn" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50" disabled>
                                     <i class="fas fa-shield-check mr-2"></i>
                                     Kirim Verifikasi KTM
                                 </button>
@@ -239,20 +254,33 @@
     </main>
 
     <script>
-    // Profile form and KTM verification are separate
-    document.getElementById('ktm-upload')?.addEventListener('change', function(e) {
-        const verifyBtn = document.getElementById('verify-btn');
-        const fileName = document.getElementById('file-name');
-        
+    // Handle both file uploads for users
+    document.getElementById('ktm-card-upload')?.addEventListener('change', function(e) {
+        handleKtmFileUpload(e, 'ktm-card-file-name', 'KTM Card');
+        checkBothKtmFiles();
+    });
+
+    document.getElementById('ktm-selfie-upload')?.addEventListener('change', function(e) {
+        handleKtmFileUpload(e, 'ktm-selfie-file-name', 'KTM Selfie');
+        checkBothKtmFiles();
+    });
+
+    function handleKtmFileUpload(e, fileNameId, type) {
+        const fileName = document.getElementById(fileNameId);
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
-            fileName.textContent = `File dipilih: ${file.name}`;
+            fileName.textContent = `${type} dipilih: ${file.name}`;
             fileName.classList.remove('hidden');
-            verifyBtn.disabled = false;
-            verifyBtn.classList.remove('bg-gray-400');
-            verifyBtn.classList.add('bg-blue-600');
         }
-    });
+    }
+
+    function checkBothKtmFiles() {
+        const verifyBtn = document.getElementById('verify-btn');
+        const ktmCard = document.getElementById('ktm-card-upload').files[0];
+        const ktmSelfie = document.getElementById('ktm-selfie-upload').files[0];
+        
+        verifyBtn.disabled = !(ktmCard && ktmSelfie);
+    }
 
     // Handle KTM verification submission
     document.getElementById('ktm-form')?.addEventListener('submit', function(e) {
@@ -262,16 +290,36 @@
         btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Mengirim...';
         btn.disabled = true;
         
-        // Simulate upload (replace with actual form submission)
-        setTimeout(() => {
-            btn.innerHTML = '<i class="fas fa-check mr-2"></i> Terkirim';
-            btn.classList.remove('bg-blue-600');
-            btn.classList.add('bg-green-600');
-            alert('KTM berhasil dikirim! Admin akan memverifikasi dalam 1x24 jam.');
-        }, 2000);
+        const formData = new FormData(this);
+        
+        fetch('{{ route("user.ktm.upload") }}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                btn.innerHTML = '<i class="fas fa-check mr-2"></i> Terkirim';
+                btn.classList.remove('bg-blue-600');
+                btn.classList.add('bg-green-600');
+                alert('KTM berhasil dikirim! Admin akan memverifikasi dalam 1x24 jam.');
+            } else {
+                alert('Error: ' + data.message);
+                btn.innerHTML = '<i class="fas fa-shield-check mr-2"></i> Kirim Verifikasi KTM';
+                btn.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan. Silakan coba lagi.');
+            btn.innerHTML = '<i class="fas fa-shield-check mr-2"></i> Kirim Verifikasi KTM';
+            btn.disabled = false;
+        });
     });
     </script>
-
 
     <!-- Mobile Bottom Navigation -->
     <nav class="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 px-6 py-3 z-50 flex justify-between items-center text-xs font-medium text-gray-400">
@@ -279,17 +327,13 @@
             <i class="fas fa-home text-lg"></i>
             <span>Home</span>
         </a>
-        <a href="#" class="flex flex-col items-center gap-1 hover:text-mangkos-main transition">
+        <a href="{{ route('kost.search') }}" class="flex flex-col items-center gap-1 hover:text-mangkos-main transition">
             <i class="fas fa-map-marked-alt text-lg"></i>
             <span>Peta</span>
         </a>
-        <a href="#" class="flex flex-col items-center gap-1 hover:text-mangkos-main transition">
+        <a href="{{ route('matchmaking.index') }}" class="flex flex-col items-center gap-1 hover:text-mangkos-main transition">
             <i class="fas fa-users text-lg"></i>
             <span>Match</span>
-        </a>
-        <a href="#" class="flex flex-col items-center gap-1 hover:text-mangkos-main transition">
-            <i class="fas fa-comment-dots text-lg"></i>
-            <span>Chat</span>
         </a>
     </nav>
 

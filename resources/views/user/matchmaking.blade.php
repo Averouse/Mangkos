@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Pencocokan - Mangkos</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -53,22 +54,21 @@
         <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
             
             <!-- PERBAIKAN: Logo sekarang bisa diklik (kembali ke index.html) -->
-            <a href="index.html" class="flex items-center gap-2 hover:opacity-80 transition">
+            <a href="{{ route('landing') }}" class="flex items-center gap-2 hover:opacity-80 transition">
                 <div class="w-8 h-8 bg-mangkos-main rounded-lg flex items-center justify-center text-white font-bold shadow-sm">M</div>
                 <span class="text-xl font-bold text-mangkos-dark tracking-tight">Mangkos</span>
             </a>
 
             <!-- Desktop Menu -->
             <div class="hidden md:flex items-center gap-8 text-sm font-medium text-gray-500">
-                <a href="index.html" class="hover:text-mangkos-main transition">Beranda</a>
-                <a href="search.html" class="hover:text-mangkos-main transition">Cari di Peta</a>
-                <a href="match.html" class="text-mangkos-main font-semibold border-b-2 border-mangkos-main pb-0.5">Pencocokan</a>
-                <a href="chat.html" class="hover:text-mangkos-main transition">Riwayat Chat</a>
+                <a href="{{ route('landing') }}" class="hover:text-mangkos-main transition">Beranda</a>
+                <a href="{{ route('kost.search') }}" class="hover:text-mangkos-main transition">Cari di Peta</a>
+                <a href="{{ route('matchmaking.index') }}" class="text-mangkos-main font-semibold border-b-2 border-mangkos-main pb-0.5">Pencocokan</a>
             </div>
 
             <!-- Profile Icon -->
             <div class="flex items-center gap-3">
-                <a href="profile.html" class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 transition">
+                <a href="{{ route('dashboard') }}" class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 transition">
                     <i class="fas fa-user text-sm"></i>
                 </a>
             </div>
@@ -91,6 +91,28 @@
 
         <!-- FORM CONTAINER -->
         <div class="w-full max-w-md mx-auto pb-24 md:pb-0">
+
+            <!-- KOST SELECTION -->
+            @if(isset($approvedKosts) && $approvedKosts->count() > 0)
+            <div class="text-center">
+                <div class="bg-white p-6 rounded-3xl w-40 h-40 mx-auto shadow-xl shadow-green-100 flex items-center justify-center mb-6">
+                    <i class="fas fa-home text-6xl text-mangkos-main"></i>
+                </div>
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-3">Pilih <span class="text-mangkos-main">Kost</span></h1>
+                <p class="text-gray-500 mb-8 text-sm leading-relaxed px-2">
+                    Pilih kost untuk mencari partner yang cocok
+                </p>
+                
+                <div class="space-y-3">
+                    @foreach($approvedKosts as $rental)
+                    <a href="{{ route('matchmaking.select', $rental->kost_id) }}" class="block p-4 bg-white border-2 border-gray-100 rounded-2xl hover:border-mangkos-main hover:bg-green-50 transition">
+                        <h3 class="font-bold text-gray-800">{{ $rental->kost->name }}</h3>
+                        <p class="text-xs text-gray-500">{{ $rental->kost->address }}</p>
+                    </a>
+                    @endforeach
+                </div>
+            </div>
+            @else
 
             <!-- STEP 0: INTRO -->
             <div id="step-0" class="step-panel active text-center">
@@ -326,7 +348,7 @@
 
                 <div class="mt-8 flex gap-4">
                     <button onclick="goToStep(6)" class="w-12 h-12 rounded-full border border-gray-200 text-gray-400 hover:bg-gray-50 flex items-center justify-center"><i class="fas fa-arrow-left"></i></button>
-                    <button onclick="processMatching()" class="flex-1 bg-mangkos-main text-white rounded-2xl font-bold shadow-lg hover:bg-mangkos-dark transition transform hover:scale-105">
+                    <button onclick="submitProfile()" class="flex-1 bg-mangkos-main text-white rounded-2xl font-bold shadow-lg hover:bg-mangkos-dark transition transform hover:scale-105">
                         Analisis Hasil <i class="fas fa-magic ml-2"></i>
                     </button>
                 </div>
@@ -364,6 +386,8 @@
                 </div>
             </div>
 
+            @endif
+
         </div>
     </main>
 
@@ -371,27 +395,23 @@
     <!-- MOBILE BOTTOM NAVBAR (DIKEMBALIKAN) -->
     <!-- ========================================== -->
     <nav class="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 px-6 py-3 z-50 flex justify-between items-center text-xs font-medium text-gray-400 shadow-up">
-        <a href="index.html" class="flex flex-col items-center gap-1 hover:text-mangkos-main transition">
+        <a href="{{ route('landing') }}" class="flex flex-col items-center gap-1 hover:text-mangkos-main transition">
             <i class="fas fa-home text-lg"></i>
             <span>Home</span>
         </a>
-        <a href="search.html" class="flex flex-col items-center gap-1 hover:text-mangkos-main transition">
+        <a href="{{ route('kost.search') }}" class="flex flex-col items-center gap-1 hover:text-mangkos-main transition">
             <i class="fas fa-map-marked-alt text-lg"></i>
             <span>Peta</span>
         </a>
         
         <!-- Tombol Match Menonjol di Tengah -->
         <div class="relative -top-6">
-            <a href="match.html" class="bg-mangkos-main text-white w-14 h-14 rounded-full shadow-lg shadow-green-200 flex items-center justify-center ring-4 ring-white transform active:scale-95 transition">
+            <a href="{{ route('matchmaking.index') }}" class="bg-mangkos-main text-white w-14 h-14 rounded-full shadow-lg shadow-green-200 flex items-center justify-center ring-4 ring-white transform active:scale-95 transition">
                 <i class="fas fa-search text-xl"></i>
             </a>
         </div>
 
-        <a href="chat.html" class="flex flex-col items-center gap-1 hover:text-mangkos-main transition">
-            <i class="fas fa-comment-dots text-lg"></i>
-            <span>Chat</span>
-        </a>
-        <a href="profile.html" class="flex flex-col items-center gap-1 hover:text-mangkos-main transition">
+        <a href="{{ route('dashboard') }}" class="flex flex-col items-center gap-1 hover:text-mangkos-main transition">
             <i class="fas fa-user text-lg"></i>
             <span>Akun</span>
         </a>
@@ -399,19 +419,39 @@
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
-        // --- 1. DATA DUMMY KANDIDAT ---
-        const candidatesDB = [
-            { id: 1, name: "Raka Pratama", major: "Teknik Informatika", img: "Raka+P", budget: 2, smoke: "no", clean: 5, sleep: "early", match_tags: ["Resik", "No Smoke"] },
-            { id: 2, name: "Dimas Anggara", major: "Logistik", img: "Dimas+A", budget: 2, smoke: "no", clean: 3, sleep: "early", match_tags: ["Sporty", "Hemat"] },
-            { id: 3, name: "Budi Santoso", major: "Akuntansi", img: "Budi+S", budget: 1, smoke: "yes", clean: 2, sleep: "late", match_tags: ["Perokok", "Santai"] },
-            { id: 4, name: "Siti Aminah", major: "Manajemen Bisnis", img: "Siti+A", budget: 3, smoke: "no", clean: 4, sleep: "late", match_tags: ["Night Owl", "Bersih"] },
-            { id: 5, name: "Kevin Sanjaya", major: "Sistem Informasi", img: "Kevin+S", budget: 4, smoke: "no", clean: 3, sleep: "late", match_tags: ["Gamer", "Sultan"] },
-            { id: 6, name: "Fajar Alfian", major: "Teknik Mesin", img: "Fajar+A", budget: 2, smoke: "yes", clean: 1, sleep: "late", match_tags: ["Perokok", "Murah"] },
-            { id: 7, name: "Reza Rahardian", major: "DKV", img: "Reza+R", budget: 5, smoke: "no", clean: 5, sleep: "early", match_tags: ["Artist", "Mewah"] },
-            { id: 8, name: "Joko Anwar", major: "Perfilman", img: "Joko+A", budget: 3, smoke: "yes", clean: 3, sleep: "late", match_tags: ["Kreatif", "Begadang"] }
-        ];
+        const kostId = {{ $kostId ?? 'null' }};
+        
+        function submitProfile() {
+            goToStep('loading');
+            
+            const preferences = {
+                kost_id: kostId,
+                budget: parseInt(document.getElementById('input-budget').value),
+                smoke: document.querySelector('input[name="smoke"]:checked').value,
+                clean: parseInt(document.getElementById('input-clean').value),
+                sleep: document.querySelector('input[name="sleep"]:checked').value,
+                noise: parseInt(document.getElementById('input-noise').value),
+                social: document.querySelector('input[name="social"]:checked').value,
+                worship: document.querySelector('input[name="worship"]:checked').value
+            };
+            
+            fetch('{{ route("matchmaking.save") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify(preferences)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.success) {
+                    window.location.href = '{{ route("matchmaking.results", ":kostId") }}'.replace(':kostId', kostId);
+                }
+            });
+        }
 
-        // --- 2. LOGIKA NAVIGASI ---
+        // --- LOGIKA NAVIGASI ---
         function goToStep(step) {
             // Sembunyikan semua step
             document.querySelectorAll('.step-panel').forEach(el => el.classList.remove('active'));
@@ -449,77 +489,6 @@
                 text = arr[val-1];
                 document.getElementById('noise-label').innerText = text;
             }
-        }
-
-        // --- 3. LOGIKA MATCHING ---
-        function processMatching() {
-            goToStep('loading');
-
-            const userPref = {
-                budget: parseInt(document.getElementById('input-budget').value),
-                smoke: document.querySelector('input[name="smoke"]:checked').value,
-                clean: parseInt(document.getElementById('input-clean').value),
-                sleep: document.querySelector('input[name="sleep"]:checked').value
-            };
-
-            let results = candidatesDB.map(candidate => {
-                let score = 100;
-                if (userPref.smoke !== candidate.smoke) score -= 30; // Dealbreaker
-                if (userPref.sleep !== candidate.sleep) score -= 15;
-                let budgetDiff = Math.abs(userPref.budget - candidate.budget);
-                score -= (budgetDiff * 5);
-                let cleanDiff = Math.abs(userPref.clean - candidate.clean);
-                score -= (cleanDiff * 5);
-                score += Math.floor(Math.random() * 5); // Randomizer kecil
-                if (score > 99) score = 99;
-                if (score < 40) score = 40;
-                return { ...candidate, finalScore: score };
-            });
-
-            results.sort((a, b) => b.finalScore - a.finalScore);
-            const topResults = results.slice(0, 6);
-
-            setTimeout(() => {
-                renderResultsHTML(topResults);
-                goToStep('result');
-            }, 2500);
-        }
-
-        function renderResultsHTML(candidates) {
-            const container = document.getElementById('results-container');
-            container.innerHTML = ""; 
-
-            candidates.forEach((c, index) => {
-                let borderClass = index === 0 ? "border-mangkos-main bg-green-50 shadow-md" : "border-gray-100 bg-white";
-                let badgeColor = index === 0 ? "bg-mangkos-main" : "bg-blue-500";
-                
-                if(c.finalScore < 60) {
-                    badgeColor = "bg-yellow-500";
-                    borderClass = "border-gray-100 bg-gray-50 opacity-90";
-                }
-
-                const html = `
-                <div class="p-4 rounded-2xl border-2 ${borderClass} shadow-sm flex gap-4 items-center transform transition hover:scale-[1.02]">
-                    <div class="relative">
-                        <img src="https://ui-avatars.com/api/?name=${c.img}&background=random&color=fff" class="w-16 h-16 rounded-full border-2 border-white shadow">
-                        <div class="absolute -bottom-1 -right-1 ${badgeColor} text-white text-[10px] font-bold px-2 py-0.5 rounded-full border-2 border-white">
-                            ${c.finalScore}%
-                        </div>
-                    </div>
-                    <div class="flex-1">
-                        <h3 class="font-bold text-gray-800 text-sm md:text-base">${c.name}</h3>
-                        <p class="text-xs text-gray-500">${c.major}</p>
-                        <div class="flex flex-wrap gap-1 mt-2">
-                            ${c.match_tags.map(tag => `<span class="bg-white border border-gray-200 text-gray-600 text-[10px] px-2 py-0.5 rounded-full">${tag}</span>`).join('')}
-                        </div>
-                    </div>
-                    <button class="w-10 h-10 rounded-xl bg-white border border-gray-100 text-mangkos-main shadow-sm flex items-center justify-center hover:bg-mangkos-main hover:text-white transition">
-                        <i class="fas fa-comment-dots"></i>
-                    </button>
-                </div>
-                `;
-                container.innerHTML += html;
-            });
         }
     </script>
 </body>

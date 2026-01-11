@@ -57,6 +57,36 @@ class AuthController extends Controller
         return redirect('/dashboard');
     }
 
+    public function uploadKtm(Request $request)
+    {
+        if (Auth::user()->role !== 'user') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+        
+        $request->validate([
+            'ktm_card_photo' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'ktm_selfie_photo' => 'required|image|mimes:jpeg,png,jpg|max:2048'
+        ]);
+        
+        // Upload KTM card photo
+        $ktmCardFile = $request->file('ktm_card_photo');
+        $ktmCardFilename = time() . '_ktm_card_' . $ktmCardFile->getClientOriginalName();
+        $ktmCardFile->move(public_path('uploads/ktm'), $ktmCardFilename);
+        
+        // Upload selfie photo
+        $ktmSelfieFile = $request->file('ktm_selfie_photo');
+        $ktmSelfieFilename = time() . '_ktm_selfie_' . $ktmSelfieFile->getClientOriginalName();
+        $ktmSelfieFile->move(public_path('uploads/ktm'), $ktmSelfieFilename);
+        
+        Auth::user()->update([
+            'id_card_photo' => $ktmCardFilename,
+            'selfie_with_id_photo' => $ktmSelfieFilename,
+            'status' => 'pending'
+        ]);
+        
+        return response()->json(['success' => true, 'message' => 'KTM verification photos uploaded successfully']);
+    }
+
     public function logout(Request $request)
     {
         Auth::logout();
