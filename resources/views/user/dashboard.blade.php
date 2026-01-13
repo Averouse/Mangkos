@@ -247,6 +247,70 @@
                         </form>
                     </div>
                 @endif
+                
+                <!-- Matchmaking Profiles Section -->
+                @php
+                    $profiles = App\Models\MatchmakingProfile::where('user_id', Auth::id())->with('kost')->get();
+                @endphp
+                @if($profiles->count() > 0)
+                <div class="mt-8 pt-6 border-t border-gray-100">
+                    <h4 class="font-medium text-gray-800 mb-4 flex items-center gap-2">
+                        <i class="fas fa-heart text-red-500"></i>
+                        Profil Matchmaking Saya
+                    </h4>
+                    
+                    <div class="space-y-4">
+                        @foreach($profiles as $profile)
+                        <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                            <div class="flex justify-between items-start mb-3">
+                                <div>
+                                    <h5 class="font-bold text-gray-800">{{ $profile->kost->name }}</h5>
+                                    <p class="text-xs text-gray-500">{{ $profile->kost->address }}</p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="px-3 py-1 rounded-full text-xs font-bold {{ $profile->is_visible ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600' }}">
+                                        <i class="fas fa-{{ $profile->is_visible ? 'eye' : 'eye-slash' }} mr-1"></i>
+                                        {{ $profile->is_visible ? 'Terlihat' : 'Tersembunyi' }}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs mb-3">
+                                <div class="bg-white p-2 rounded border border-gray-100">
+                                    <span class="text-gray-500">Budget:</span>
+                                    <strong class="block">{{ $profile->preferences['budget'] }}/5</strong>
+                                </div>
+                                <div class="bg-white p-2 rounded border border-gray-100">
+                                    <span class="text-gray-500">Merokok:</span>
+                                    <strong class="block">{{ $profile->preferences['smoke'] === 'yes' ? 'Ya' : 'Tidak' }}</strong>
+                                </div>
+                                <div class="bg-white p-2 rounded border border-gray-100">
+                                    <span class="text-gray-500">Kebersihan:</span>
+                                    <strong class="block">{{ $profile->preferences['clean'] }}/5</strong>
+                                </div>
+                                <div class="bg-white p-2 rounded border border-gray-100">
+                                    <span class="text-gray-500">Tidur:</span>
+                                    <strong class="block">{{ ucfirst($profile->preferences['sleep']) }}</strong>
+                                </div>
+                            </div>
+                            
+                            <div class="flex gap-2">
+                                <button onclick="toggleProfileVisibility({{ $profile->kost_id }}, {{ $profile->is_visible ? 'false' : 'true' }})" class="flex-1 bg-{{ $profile->is_visible ? 'gray' : 'green' }}-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-80 transition">
+                                    <i class="fas fa-{{ $profile->is_visible ? 'eye-slash' : 'eye' }} mr-1"></i>
+                                    {{ $profile->is_visible ? 'Sembunyikan' : 'Tampilkan' }}
+                                </button>
+                                <a href="{{ route('matchmaking.select', $profile->kost_id) }}" class="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition text-center">
+                                    <i class="fas fa-edit mr-1"></i> Edit Preferensi
+                                </a>
+                                <a href="{{ route('matchmaking.results', $profile->kost_id) }}" class="flex-1 bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-orange-600 transition text-center">
+                                    <i class="fas fa-users mr-1"></i> Lihat Match
+                                </a>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
             </div>
         </div>
 
@@ -254,6 +318,26 @@
     </main>
 
     <script>
+    function toggleProfileVisibility(kostId, visible) {
+        fetch('{{ route("matchmaking.toggle-visibility") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                kost_id: kostId,
+                is_visible: visible
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        });
+    }
+    
     // Handle both file uploads for users
     document.getElementById('ktm-card-upload')?.addEventListener('change', function(e) {
         handleKtmFileUpload(e, 'ktm-card-file-name', 'KTM Card');

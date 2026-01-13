@@ -41,12 +41,15 @@ Route::middleware('auth')->group(function () {
     Route::post('/user/ktm-upload', [AuthController::class, 'uploadKtm'])->name('user.ktm.upload');
     Route::post('/owner/kosts/{id}/toggle-full', [OwnerController::class, 'toggleFull'])->name('owner.kosts.toggle-full');
     Route::post('/owner/kosts/{id}/update', [OwnerController::class, 'update'])->name('owner.kosts.update');
+    Route::post('/owner/rental/{id}/approve', [OwnerController::class, 'approveRental'])->name('owner.rental.approve');
+    Route::post('/owner/rental/{id}/reject', [OwnerController::class, 'rejectRental'])->name('owner.rental.reject');
     
     // Matchmaking routes
     Route::get('/matchmaking', [MatchmakingController::class, 'index'])->name('matchmaking.index');
     Route::get('/matchmaking/kost/{kostId}', [MatchmakingController::class, 'selectKost'])->name('matchmaking.select');
     Route::post('/matchmaking/profile', [MatchmakingController::class, 'saveProfile'])->name('matchmaking.save');
     Route::get('/matchmaking/results/{kostId}', [MatchmakingController::class, 'results'])->name('matchmaking.results');
+    Route::post('/matchmaking/toggle-visibility', [MatchmakingController::class, 'toggleVisibility'])->name('matchmaking.toggle-visibility');
     
     // Rental Application routes
     Route::post('/rental/apply', [KostController::class, 'applyRental'])->name('rental.apply');

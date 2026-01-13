@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Kost;
+use App\Models\RentalApplication;
 
 class OwnerController extends Controller
 {
@@ -21,7 +22,16 @@ class OwnerController extends Controller
             return $kost->total_rooms - $kost->available_rooms;
         });
         
-        return view('owner.dashboard', compact('kosts', 'totalRooms', 'occupiedRooms'));
+        // Get rental applications for owner's kosts
+        $kostIds = $kosts->pluck('id');
+        $rentalApplications = RentalApplication::whereIn('kost_id', $kostIds)
+            ->with(['user', 'kost'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        $pendingApplications = $rentalApplications->where('status', 'pending')->count();
+        
+        return view('owner.dashboard', compact('kosts', 'totalRooms', 'occupiedRooms', 'rentalApplications', 'pendingApplications'));
     }
 
     public function store(Request $request)
@@ -145,6 +155,34 @@ class OwnerController extends Controller
         $kost->update($validated);
         
         return response()->json(['success' => true, 'message' => 'Kost updated successfully']);
+    }
+    
+    public function approveRental($id)
+    {
+        $application = RentalApplication::with('kost')
+            ->whereHas('kost', function($query) {
+                $query->where('owner_id', Auth::id());
+            })
+            ->findOrFail($id);
+        
+        $application->status = 'approved';
+        $application->save();
+        
+        return response()->json(['success' => true]);
+    }
+    
+    public function rejectRental($id)
+    {
+        $application = RentalApplication::with('kost')
+            ->whereHas('kost', function($query) {
+                $query->where('owner_id', Auth::id());
+            })
+            ->findOrFail($id);
+        
+        $application->status = 'rejected';
+        $application->save();
+        
+        return response()->json(['success' => true]);
     }
 
 }

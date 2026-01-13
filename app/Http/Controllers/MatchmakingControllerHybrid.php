@@ -76,29 +76,29 @@ class MatchmakingController extends Controller
             'worship' => 'required|in:flexible,strict'
         ]);
         
-        try {
-            MatchmakingProfile::updateOrCreate(
-                ['user_id' => Auth::id(), 'kost_id' => $validated['kost_id']],
-                [
-                    'preferences' => [
-                        'budget' => $validated['budget'],
-                        'smoke' => $validated['smoke'],
-                        'clean' => $validated['clean'],
-                        'sleep' => $validated['sleep'],
-                        'noise' => $validated['noise'],
-                        'social' => $validated['social'],
-                        'worship' => $validated['worship']
-                    ],
-                    'ahp_weights' => [0.364, 0.222, 0.148, 0.088, 0.088, 0.054, 0.036],
-                    'is_visible' => true
-                ]
-            );
-            
-            return response()->json(['success' => true]);
-        } catch (\Exception $e) {
-            \Log::error('Profile save error: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to save profile'], 500);
-        }
+        $preferences = [
+            'budget' => $validated['budget'],
+            'smoke' => $validated['smoke'],
+            'clean' => $validated['clean'],
+            'sleep' => $validated['sleep'],
+            'noise' => $validated['noise'],
+            'social' => $validated['social'],
+            'worship' => $validated['worship']
+        ];
+        
+        $profile = MatchmakingProfile::updateOrCreate(
+            ['user_id' => Auth::id(), 'kost_id' => $validated['kost_id']],
+            [
+                'preferences' => $preferences, 
+                'ahp_weights' => $this->defaultWeights,
+                'is_visible' => true
+            ]
+        );
+        
+        // Use simplified TOPSIS for performance
+        $this->calculateTOPSISMatches($validated['kost_id'], Auth::id());
+        
+        return response()->json(['success' => true]);
     }
     
     public function toggleVisibility(Request $request)
@@ -136,9 +136,6 @@ class MatchmakingController extends Controller
             return redirect()->route('matchmaking.select', $kostId);
         }
         
-        // Calculate matches on-demand for instant results
-        $this->calculateTOPSISMatches($kostId, $user->id);
-        
         $matches = UserMatch::where('kost_id', $kostId)
             ->where(function($query) use ($user) {
                 $query->where('user1_id', $user->id)
@@ -157,87 +154,117 @@ class MatchmakingController extends Controller
     }
     
     /**
-     * Ultra-fast compatibility calculation - no database loops
+     * Simplified TOPSIS implementation for performance
      */
     private function calculateTOPSISMatches($kostId, $userId)
     {
-        $myProfile = MatchmakingProfile::where('user_id', $userId)
-            ->where('kost_id', $kostId)
-            ->first();
+        try {
+            $myProfile = MatchmakingProfile::where('user_id', $userId)
+                ->where('kost_id', $kostId)
+                ->first();
+                
+            if (!$myProfile) return;
             
-        if (!$myProfile) return;
-        
-        $otherProfiles = MatchmakingProfile::where('kost_id', $kostId)
-            ->where('user_id', '!=', $userId)
-            ->where('is_visible', true)
-            ->get();
-        
-        if ($otherProfiles->isEmpty()) return;
-        
-        $myVector = $this->preferencesToVector($myProfile->preferences);
-        $weights = [0.364, 0.222, 0.148, 0.088, 0.088, 0.054, 0.036];
-        
-        // Batch insert/update for better performance
-        $matchData = [];
-        
-        foreach ($otherProfiles as $profile) {
-            $otherVector = $this->preferencesToVector($profile->preferences);
-            $score = $this->fastCompatibility($myVector, $otherVector, $weights);
+            $otherProfiles = MatchmakingProfile::where('kost_id', $kostId)
+                ->where('user_id', '!=', $userId)
+                ->where('is_visible', true)
+                ->get();
             
-            $matchData[] = [
-                'user1_id' => min($userId, $profile->user_id),
-                'user2_id' => max($userId, $profile->user_id),
-                'kost_id' => $kostId,
-                'compatibility_score' => $score,
-                'status' => 'pending',
-                'created_at' => now(),
-                'updated_at' => now()
-            ];
-        }
-        
-        // Delete existing matches for this user in this kost
-        UserMatch::where('kost_id', $kostId)
-            ->where(function($query) use ($userId) {
-                $query->where('user1_id', $userId)
-                      ->orWhere('user2_id', $userId);
-            })
-            ->delete();
+            if ($otherProfiles->isEmpty()) return;
             
-        // Batch insert new matches
-        if (!empty($matchData)) {
-            UserMatch::insert($matchData);
+            // Build decision matrix
+            $candidates = [];
+            $candidateIds = [];
+            
+            foreach ($otherProfiles as $profile) {
+                $candidates[] = $this->preferencesToVector($profile->preferences);
+                $candidateIds[] = $profile->user_id;
+            }
+            
+            // Apply simplified TOPSIS
+            $scores = $this->simplifiedTOPSIS($candidates, $this->defaultWeights);
+            
+            // Save matches
+            foreach ($scores as $index => $score) {
+                $otherUserId = $candidateIds[$index];
+                
+                UserMatch::updateOrCreate(
+                    [
+                        'user1_id' => min($userId, $otherUserId),
+                        'user2_id' => max($userId, $otherUserId),
+                        'kost_id' => $kostId
+                    ],
+                    [
+                        'compatibility_score' => round($score * 100, 2),
+                        'status' => 'pending'
+                    ]
+                );
+            }
+        } catch (\Exception $e) {
+            \Log::error('TOPSIS calculation error: ' . $e->getMessage());
         }
     }
     
     /**
-     * Fastest possible compatibility calculation
+     * Simplified TOPSIS - faster than full implementation
      */
-    private function fastCompatibility($v1, $v2, $w)
+    private function simplifiedTOPSIS($candidates, $weights)
     {
-        $score = 0;
+        $m = count($candidates);
+        $n = count($candidates[0]);
         
-        // Budget (0-4 scale)
-        $score += (1 - abs($v1[0] - $v2[0]) / 4) * $w[0];
+        // Step 1: Normalize (simplified)
+        $normalized = [];
+        for ($j = 0; $j < $n; $j++) {
+            $column = array_column($candidates, $j);
+            $max = max($column);
+            $min = min($column);
+            $range = $max - $min;
+            
+            for ($i = 0; $i < $m; $i++) {
+                if ($range > 0) {
+                    $normalized[$i][$j] = ($candidates[$i][$j] - $min) / $range;
+                } else {
+                    $normalized[$i][$j] = 1; // All same values
+                }
+            }
+        }
         
-        // Smoke (binary)
-        $score += ($v1[1] == $v2[1] ? 1 : 0) * $w[1];
+        // Step 2: Apply weights
+        $weighted = [];
+        for ($i = 0; $i < $m; $i++) {
+            for ($j = 0; $j < $n; $j++) {
+                $weighted[$i][$j] = $normalized[$i][$j] * $weights[$j];
+            }
+        }
         
-        // Clean (0-4 scale)
-        $score += (1 - abs($v1[2] - $v2[2]) / 4) * $w[2];
+        // Step 3: Calculate ideal solutions
+        $idealPositive = [];
+        $idealNegative = [];
+        for ($j = 0; $j < $n; $j++) {
+            $column = array_column($weighted, $j);
+            $idealPositive[$j] = max($column);
+            $idealNegative[$j] = min($column);
+        }
         
-        // Sleep (binary)
-        $score += ($v1[3] == $v2[3] ? 1 : 0) * $w[3];
+        // Step 4: Calculate closeness coefficient
+        $scores = [];
+        for ($i = 0; $i < $m; $i++) {
+            $distancePos = 0;
+            $distanceNeg = 0;
+            
+            for ($j = 0; $j < $n; $j++) {
+                $distancePos += pow($weighted[$i][$j] - $idealPositive[$j], 2);
+                $distanceNeg += pow($weighted[$i][$j] - $idealNegative[$j], 2);
+            }
+            
+            $distancePos = sqrt($distancePos);
+            $distanceNeg = sqrt($distanceNeg);
+            
+            $scores[$i] = $distanceNeg / ($distancePos + $distanceNeg);
+        }
         
-        // Noise (0-4 scale)
-        $score += (1 - abs($v1[4] - $v2[4]) / 4) * $w[4];
-        
-        // Social (0-4 scale)
-        $score += (1 - abs($v1[5] - $v2[5]) / 4) * $w[5];
-        
-        // Worship (binary)
-        $score += ($v1[6] == $v2[6] ? 1 : 0) * $w[6];
-        
-        return round($score * 100, 2);
+        return $scores;
     }
     
     private function preferencesToVector($preferences)

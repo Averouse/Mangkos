@@ -443,11 +443,25 @@
                 },
                 body: JSON.stringify(preferences)
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then(data => {
                 if(data.success) {
+                    // Redirect immediately without delay
                     window.location.href = '{{ route("matchmaking.results", ":kostId") }}'.replace(':kostId', kostId);
+                } else {
+                    alert('Error saving profile');
+                    goToStep(7); // Go back to last step
                 }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error saving profile');
+                goToStep(7); // Go back to last step
             });
         }
 
