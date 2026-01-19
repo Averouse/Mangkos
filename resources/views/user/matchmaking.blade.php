@@ -47,30 +47,29 @@
 </head>
 <body class="bg-gray-50 text-gray-800 h-screen flex flex-col overflow-hidden">
 
-    <!-- ========================================== -->
-    <!-- NAVBAR (TOP) -->
-    <!-- ========================================== -->
-    <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm">
-        <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
-            
-            <!-- PERBAIKAN: Logo sekarang bisa diklik (kembali ke index.html) -->
-            <a href="{{ route('landing') }}" class="flex items-center gap-2 hover:opacity-80 transition">
-                <div class="w-8 h-8 bg-mangkos-main rounded-lg flex items-center justify-center text-white font-bold shadow-sm">M</div>
+    <!-- NAVBAR -->
+    <nav class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-200 shadow-sm">
+        <div class="px-4 py-3 flex justify-between items-center max-w-6xl mx-auto">
+            <div class="flex items-center gap-2">
+                <img src="{{ asset('images/mangkos_icon.png') }}" alt="Mangkos" class="w-8 h-8 rounded-lg shadow-md">
                 <span class="text-xl font-bold text-mangkos-dark tracking-tight">Mangkos</span>
-            </a>
-
-            <!-- Desktop Menu -->
-            <div class="hidden md:flex items-center gap-8 text-sm font-medium text-gray-500">
-                <a href="{{ route('landing') }}" class="hover:text-mangkos-main transition">Beranda</a>
-                <a href="{{ route('kost.search') }}" class="hover:text-mangkos-main transition">Cari di Peta</a>
-                <a href="{{ route('matchmaking.index') }}" class="text-mangkos-main font-semibold border-b-2 border-mangkos-main pb-0.5">Pencocokan</a>
             </div>
-
-            <!-- Profile Icon -->
-            <div class="flex items-center gap-3">
-                <a href="{{ route('dashboard') }}" class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 transition">
-                    <i class="fas fa-user text-sm"></i>
-                </a>
+            
+            <!-- Navigation Menu -->
+            <div class="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
+                <a href="{{ route('dashboard') }}" class="hover:text-mangkos-main transition">Dashboard</a>
+                <a href="{{ route('kost.search') }}" class="hover:text-mangkos-main transition">Pencarian Kos</a>
+                <a href="{{ route('matchmaking.index') }}" class="text-mangkos-main font-semibold">Matchmaking</a>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <span class="text-sm text-gray-600 hidden sm:block">{{ Auth::user()->name }}</span>
+                <form method="POST" action="{{ route('logout') }}" class="inline">
+                    @csrf
+                    <button type="submit" class="text-gray-400 hover:text-red-500 transition p-2 rounded-lg hover:bg-red-50" title="Keluar">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </form>
             </div>
         </div>
         
@@ -487,7 +486,7 @@
 
         // Helper Update Label Slider
         function updateLabel(type, val) {
-            const budgetLabels = ["< 500rb", "500rb - 1jt", "1jt - 1.5jt", "1.5jt - 2jt", "> 2jt"];
+            const budgetLabels = ["< Rp 500.000", "Rp 500.000 - 1.000.000", "Rp 1.000.000 - 1.500.000", "Rp 1.500.000 - 2.000.000", "> Rp 2.000.000"];
             if(type === 'budget') document.getElementById('budget-val').innerText = budgetLabels[val-1];
         }
 

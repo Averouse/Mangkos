@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Mangkos</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -27,7 +28,7 @@
     <nav class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-200 shadow-sm">
         <div class="px-4 py-3 flex justify-between items-center max-w-6xl mx-auto">
             <div class="flex items-center gap-2">
-                <div class="w-8 h-8 bg-mangkos-main rounded-lg flex items-center justify-center text-white font-bold shadow-md">M</div>
+                <img src="{{ asset('images/mangkos_icon.png') }}" alt="Mangkos" class="w-8 h-8 rounded-lg shadow-md">
                 <span class="text-xl font-bold text-mangkos-dark tracking-tight">Mangkos</span>
             </div>
             
@@ -39,6 +40,58 @@
             </div>
             
             <div class="flex items-center gap-4">
+                <!-- Notification Bell -->
+                <div class="relative" x-data="{ open: false, notifications: [], unreadCount: 0 }" 
+                     x-init="
+                        fetch('/notifications')
+                            .then(r => r.json())
+                            .then(data => {
+                                notifications = data;
+                                unreadCount = data.filter(n => !n.is_read).length;
+                            });
+                     ">
+                    <button @click="open = !open" class="relative p-2 text-gray-600 hover:text-mangkos-main transition rounded-lg hover:bg-gray-50">
+                        <i class="fas fa-bell text-lg"></i>
+                        <span x-show="unreadCount > 0" x-text="unreadCount" 
+                              class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold"></span>
+                    </button>
+                    
+                    <!-- Dropdown -->
+                    <div x-show="open" @click.away="open = false" 
+                         class="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50 max-h-96 overflow-y-auto">
+                        <div class="p-4 border-b border-gray-100 flex justify-between items-center">
+                            <h3 class="font-bold text-gray-800">Notifikasi</h3>
+                            <button @click="fetch('/notifications/read-all', {method: 'POST', headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'}}).then(() => { notifications.forEach(n => n.is_read = true); unreadCount = 0; })" 
+                                    class="text-xs text-mangkos-main hover:underline">Tandai Semua Dibaca</button>
+                        </div>
+                        <div x-show="notifications.length === 0" class="p-8 text-center text-gray-400">
+                            <i class="fas fa-bell-slash text-3xl mb-2"></i>
+                            <p class="text-sm">Tidak ada notifikasi</p>
+                        </div>
+                        <template x-for="notif in notifications" :key="notif.id">
+                            <div @click="if(!notif.is_read) { fetch(`/notifications/${notif.id}/read`, {method: 'POST', headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'}}).then(() => { notif.is_read = true; unreadCount--; }); }" 
+                                 :class="notif.is_read ? 'bg-white' : 'bg-blue-50'" 
+                                 class="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition">
+                                <div class="flex gap-3">
+                                    <div :class="notif.type === 'rental_status' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'" 
+                                         class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <i :class="notif.type === 'rental_status' ? 'fa-home' : 'fa-user-check'" class="fas"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="font-semibold text-sm text-gray-800" x-text="notif.title"></p>
+                                        <p class="text-xs text-gray-600 mt-1" x-text="notif.message"></p>
+                                        <p x-show="notif.rejection_reason" class="text-xs text-red-600 mt-1 font-medium">
+                                            <i class="fas fa-exclamation-circle mr-1"></i>
+                                            <span x-text="'Alasan: ' + notif.rejection_reason"></span>
+                                        </p>
+                                        <p class="text-xs text-gray-400 mt-1" x-text="new Date(notif.created_at).toLocaleDateString('id-ID')"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                
                 <span class="text-sm text-gray-600 hidden sm:block">{{ Auth::user()->name }}</span>
                 <form method="POST" action="{{ route('logout') }}" class="inline">
                     @csrf
@@ -86,7 +139,7 @@
                     </div>
                 </div>
                 <button class="w-full bg-blue-50 text-blue-600 py-3 rounded-lg font-medium hover:bg-blue-100 transition">
-                    Mulai Pencarian
+                    <a href="{{ route('kost.search') }}" class="block w-full text-center">Mulai Pencarian</a>
                 </button>
             </div>
             
@@ -102,7 +155,7 @@
                 </div>
                 @if(Auth::user()->status === 'approved')
                     <button class="w-full bg-green-50 text-green-600 py-3 rounded-lg font-medium hover:bg-green-100 transition">
-                        Mulai Matchmaking
+                        <a href="{{ route('matchmaking.index') }}" class="block w-full text-center">Mulai Matchmaking</a>
                     </button>
                 @else
                     <button disabled class="w-full bg-gray-100 text-gray-400 py-3 rounded-lg font-medium cursor-not-allowed">
@@ -124,9 +177,10 @@
             <div class="p-6">
                 <div class="flex items-start gap-6 mb-6">
                     <div class="relative">
-                        <img src="https://ui-avatars.com/api/?name={{ Auth::user()->name }}&background=10b981&color=fff" 
-                            class="w-20 h-20 rounded-full border-4 border-green-50 shadow-sm">
-                        <button class="absolute -bottom-1 -right-1 bg-white p-1.5 rounded-full border border-gray-200 shadow hover:bg-gray-50 transition">
+                        <img id="profile-photo" src="{{ Auth::user()->profile_photo ? asset('uploads/profiles/' . Auth::user()->profile_photo) : 'https://ui-avatars.com/api/?name=' . urlencode(Auth::user()->name) . '&background=10b981&color=fff' }}" 
+                            class="w-20 h-20 rounded-full border-4 border-green-50 shadow-sm object-cover">
+                        <input type="file" id="photo-upload" accept="image/*" class="hidden">
+                        <button onclick="document.getElementById('photo-upload').click()" class="absolute -bottom-1 -right-1 bg-white p-1.5 rounded-full border border-gray-200 shadow hover:bg-gray-50 transition">
                             <i class="fas fa-camera text-gray-500 text-xs"></i>
                         </button>
                     </div>
@@ -148,11 +202,12 @@
                 </div>
 
                 <!-- Profile Form -->
-                <form class="space-y-4">
+                <form id="profile-form" class="space-y-4">
+                    @csrf
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Nama Lengkap</label>
-                            <input type="text" value="{{ Auth::user()->name }}" 
+                            <input type="text" name="name" value="{{ Auth::user()->name }}" required
                                 class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-mangkos-main focus:ring-2 focus:ring-green-100 outline-none transition">
                         </div>
                         <div>
@@ -164,26 +219,26 @@
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Nomor WhatsApp</label>
-                            <input type="text" placeholder="08xxxxxxxxxx" 
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nomor WhatsApp <span class="text-red-500">*</span></label>
+                            <input type="text" name="phone" value="{{ Auth::user()->phone }}" placeholder="08xxxxxxxxxx" required
                                 class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-mangkos-main focus:ring-2 focus:ring-green-100 outline-none transition">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Kampus</label>
-                            <input type="text" placeholder="Nama Universitas" 
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Kampus <span class="text-red-500">*</span></label>
+                            <input type="text" name="campus" value="{{ Auth::user()->campus }}" placeholder="Nama Universitas" required
                                 class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-mangkos-main focus:ring-2 focus:ring-green-100 outline-none transition">
                         </div>
                     </div>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Jurusan</label>
-                            <input type="text" placeholder="Program Studi" 
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Jurusan <span class="text-red-500">*</span></label>
+                            <input type="text" name="major" value="{{ Auth::user()->major }}" placeholder="Program Studi" required
                                 class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-mangkos-main focus:ring-2 focus:ring-green-100 outline-none transition">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Angkatan</label>
-                            <input type="number" placeholder="2024" 
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Angkatan <span class="text-red-500">*</span></label>
+                            <input type="number" name="year" value="{{ Auth::user()->year }}" placeholder="2024" required
                                 class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-mangkos-main focus:ring-2 focus:ring-green-100 outline-none transition">
                         </div>
                     </div>
@@ -191,9 +246,6 @@
                     <div class="flex gap-3 pt-4">
                         <button type="submit" class="bg-mangkos-main text-white px-6 py-3 rounded-lg font-medium hover:bg-mangkos-dark transition">
                             Simpan Perubahan
-                        </button>
-                        <button type="button" class="bg-gray-100 text-gray-600 px-6 py-3 rounded-lg font-medium hover:bg-gray-200 transition">
-                            Batal
                         </button>
                     </div>
                 </form>
@@ -206,11 +258,21 @@
                             Verifikasi KTM
                         </h4>
                         
+                        @php
+                            $profileComplete = Auth::user()->phone && Auth::user()->campus && Auth::user()->major && Auth::user()->year;
+                        @endphp
+                        
+                        @if(!$profileComplete)
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                            <p class="text-sm text-yellow-700 font-medium"><i class="fas fa-exclamation-triangle mr-2"></i>Lengkapi profil terlebih dahulu sebelum upload KTM</p>
+                        </div>
+                        @else
                         <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                             <p class="text-sm text-blue-700">Upload foto KTM untuk mengakses fitur matchmaking teman sekamar</p>
                         </div>
+                        @endif
                         
-                        <form id="ktm-form" enctype="multipart/form-data">
+                        <form id="ktm-form" enctype="multipart/form-data" {{ !$profileComplete ? 'style=pointer-events:none;opacity:0.5' : '' }}>
                             @csrf
                             <div class="space-y-6">
                                 <!-- KTM Card Photo -->
@@ -318,6 +380,83 @@
     </main>
 
     <script>
+    // Profile photo upload
+    document.getElementById('photo-upload')?.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        if (file.size > 2048000) {
+            alert('❌ Ukuran file terlalu besar! Maksimal 2MB');
+            e.target.value = '';
+            return;
+        }
+        
+        if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
+            alert('❌ Format file tidak didukung! Gunakan JPG, PNG, atau JPEG');
+            e.target.value = '';
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('photo', file);
+        
+        fetch('{{ route("user.profile.photo") }}', {
+            method: 'POST',
+            body: formData,
+            headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'}
+        })
+        .then(r => {
+            if (!r.ok) throw new Error('Upload gagal');
+            return r.json();
+        })
+        .then(data => {
+            if(data.success) {
+                document.getElementById('profile-photo').src = '/uploads/profiles/' + data.photo;
+                alert('✅ Foto profil berhasil diperbarui!');
+            } else {
+                throw new Error(data.message || 'Upload gagal');
+            }
+        })
+        .catch(error => {
+            alert('❌ Gagal mengupload foto: ' + error.message);
+        });
+    });
+    
+    // Profile form submission
+    document.getElementById('profile-form')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const data = {};
+        formData.forEach((value, key) => { data[key] = value; });
+        
+        fetch('{{ route("user.profile.update") }}', {
+            method: 'POST',
+            body: JSON.stringify(data),
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            }
+        })
+        .then(r => {
+            if (!r.ok) {
+                return r.json().then(err => {
+                    throw new Error(err.message || 'Validasi gagal');
+                });
+            }
+            return r.json();
+        })
+        .then(data => {
+            if(data.success) {
+                alert('✅ Profil berhasil diperbarui!');
+                location.reload();
+            }
+        })
+        .catch(error => {
+            alert('❌ Terjadi kesalahan: ' + error.message);
+        });
+    });
+    
     function toggleProfileVisibility(kostId, visible) {
         fetch('{{ route("matchmaking.toggle-visibility") }}', {
             method: 'POST',
@@ -379,11 +518,12 @@
         fetch('{{ route("user.ktm.upload") }}', {
             method: 'POST',
             body: formData,
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            }
+            headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'}
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) throw new Error('Upload gagal');
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 btn.innerHTML = '<i class="fas fa-check mr-2"></i> Terkirim';
@@ -391,14 +531,11 @@
                 btn.classList.add('bg-green-600');
                 alert('KTM berhasil dikirim! Admin akan memverifikasi dalam 1x24 jam.');
             } else {
-                alert('Error: ' + data.message);
-                btn.innerHTML = '<i class="fas fa-shield-check mr-2"></i> Kirim Verifikasi KTM';
-                btn.disabled = false;
+                throw new Error(data.message || 'Upload gagal');
             }
         })
         .catch(error => {
-            console.error('Error:', error);
-            alert('Terjadi kesalahan. Silakan coba lagi.');
+            alert('Terjadi kesalahan: ' + error.message);
             btn.innerHTML = '<i class="fas fa-shield-check mr-2"></i> Kirim Verifikasi KTM';
             btn.disabled = false;
         });

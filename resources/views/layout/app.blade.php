@@ -22,8 +22,7 @@
         <div class="container mx-auto px-4 py-3 flex justify-between items-center">
             {{-- Logo --}}
             <a href="/" class="flex items-center space-x-2">
-                {{-- Ganti dengan path logo Anda --}}
-                <img src="{{ asset('images/logo-mangkos.png') }}" alt="MangKos Logo" class="h-8 w-auto">
+                <img src="{{ asset('images/mangkos_icon.png') }}" alt="MangKos Logo" class="h-8 w-auto">
                 <span class="text-2xl font-bold text-emerald-600">MangKos</span>
             </a>
             
@@ -93,7 +92,7 @@
         <div class="container mx-auto px-4 text-center">
             <div class="mb-4">
                 <a href="/" class="text-2xl font-bold">
-                    <img src="{{ asset('images/logo-mangkos-white.png') }}" alt="MangKos Logo" class="h-8 w-auto mx-auto">
+                    <img src="{{ asset('images/mangkos_icon.png') }}" alt="MangKos Logo" class="h-8 w-auto mx-auto">
                 </a>
             </div>
             <p class="text-emerald-100">&copy; 2025 MangKos. Dibuat dengan ❤️ untuk Mahasiswa Indonesia.</p>

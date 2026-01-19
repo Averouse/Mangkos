@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Pemilik - Mangkos</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script>
     tailwind.config = {
         theme: {
@@ -25,7 +26,7 @@
     <!-- SIDEBAR -->
     <aside class="w-64 bg-white border-r border-gray-200 h-full shadow-sm">
         <div class="p-6 border-b border-gray-100 flex items-center gap-3">
-            <div class="w-8 h-8 bg-mangkos-main rounded-lg flex items-center justify-center text-white font-bold shadow-md">M</div>
+            <img src="{{ asset('images/mangkos_icon.png') }}" alt="Mangkos" class="w-8 h-8 rounded-lg shadow-md">
             <span class="text-lg font-bold text-gray-800">Mangkos <span class="text-xs font-normal text-gray-500 block">Owner</span></span>
         </div>
         
@@ -72,15 +73,68 @@
                     <h1 class="text-2xl font-bold text-gray-800">Halo, {{ Auth::user()->name }} 👋</h1>
                     <p class="text-gray-500 text-sm mt-1">Kelola properti kost Anda</p>
                 </div>
-                @if(Auth::user()->status === 'approved')
-                    <button onclick="openModal('addKostModal')" class="bg-mangkos-main text-white px-5 py-2.5 rounded-xl font-medium hover:bg-mangkos-dark transition flex items-center gap-2 shadow-lg">
-                        <i class="fas fa-plus"></i> Tambah Kost
-                    </button>
-                @else
-                    <button onclick="showVerificationAlert()" class="bg-gray-400 text-white px-5 py-2.5 rounded-xl font-medium cursor-not-allowed flex items-center gap-2">
-                        <i class="fas fa-lock"></i> Perlu Verifikasi
-                    </button>
-                @endif
+                <div class="flex items-center gap-4">
+                    <!-- Notification Bell -->
+                    <div class="relative" x-data="{ open: false, notifications: [], unreadCount: 0 }" 
+                         x-init="
+                            fetch('/notifications')
+                                .then(r => r.json())
+                                .then(data => {
+                                    notifications = data;
+                                    unreadCount = data.filter(n => !n.is_read).length;
+                                });
+                         ">
+                        <button @click="open = !open" class="relative p-2 text-gray-600 hover:text-mangkos-main transition rounded-lg hover:bg-gray-50">
+                            <i class="fas fa-bell text-xl"></i>
+                            <span x-show="unreadCount > 0" x-text="unreadCount" 
+                                  class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold"></span>
+                        </button>
+                        
+                        <div x-show="open" @click.away="open = false" 
+                             class="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50 max-h-96 overflow-y-auto">
+                            <div class="p-4 border-b border-gray-100 flex justify-between items-center">
+                                <h3 class="font-bold text-gray-800">Notifikasi</h3>
+                                <button @click="fetch('/notifications/read-all', {method: 'POST', headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'}}).then(() => { notifications.forEach(n => n.is_read = true); unreadCount = 0; })" 
+                                        class="text-xs text-mangkos-main hover:underline">Tandai Semua Dibaca</button>
+                            </div>
+                            <div x-show="notifications.length === 0" class="p-8 text-center text-gray-400">
+                                <i class="fas fa-bell-slash text-3xl mb-2"></i>
+                                <p class="text-sm">Tidak ada notifikasi</p>
+                            </div>
+                            <template x-for="notif in notifications" :key="notif.id">
+                                <div @click="if(!notif.is_read) { fetch(`/notifications/${notif.id}/read`, {method: 'POST', headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'}}).then(() => { notif.is_read = true; unreadCount--; }); }" 
+                                     :class="notif.is_read ? 'bg-white' : 'bg-blue-50'" 
+                                     class="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition">
+                                    <div class="flex gap-3">
+                                        <div :class="notif.type === 'rental_application' ? 'bg-orange-100 text-orange-600' : notif.type === 'kost_verification' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'" 
+                                             class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0">
+                                            <i :class="notif.type === 'rental_application' ? 'fa-file-contract' : notif.type === 'kost_verification' ? 'fa-building' : 'fa-user-check'" class="fas"></i>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="font-semibold text-sm text-gray-800" x-text="notif.title"></p>
+                                            <p class="text-xs text-gray-600 mt-1" x-text="notif.message"></p>
+                                            <p x-show="notif.rejection_reason" class="text-xs text-red-600 mt-1 font-medium">
+                                                <i class="fas fa-exclamation-circle mr-1"></i>
+                                                <span x-text="'Alasan: ' + notif.rejection_reason"></span>
+                                            </p>
+                                            <p class="text-xs text-gray-400 mt-1" x-text="new Date(notif.created_at).toLocaleDateString('id-ID')"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                    
+                    @if(Auth::user()->status === 'approved')
+                        <button onclick="openModal('addKostModal')" class="bg-mangkos-main text-white px-5 py-2.5 rounded-xl font-medium hover:bg-mangkos-dark transition flex items-center gap-2 shadow-lg">
+                            <i class="fas fa-plus"></i> Tambah Kost
+                        </button>
+                    @else
+                        <button onclick="showVerificationAlert()" class="bg-gray-400 text-white px-5 py-2.5 rounded-xl font-medium cursor-not-allowed flex items-center gap-2">
+                            <i class="fas fa-lock"></i> Perlu Verifikasi
+                        </button>
+                    @endif
+                </div>
             </div>
         </header>
 
@@ -216,11 +270,27 @@
                         Informasi Profil
                     </h4>
                     
-                    <form class="space-y-4">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="relative">
+                            <img id="owner-profile-photo" src="{{ Auth::user()->profile_photo ? asset('uploads/profiles/' . Auth::user()->profile_photo) : 'https://ui-avatars.com/api/?name=' . urlencode(Auth::user()->name) . '&background=f97316&color=fff' }}" 
+                                class="w-20 h-20 rounded-full border-4 border-orange-50 shadow-sm object-cover">
+                            <input type="file" id="owner-photo-upload" accept="image/*" class="hidden">
+                            <button onclick="document.getElementById('owner-photo-upload').click()" type="button" class="absolute -bottom-1 -right-1 bg-white p-1.5 rounded-full border border-gray-200 shadow hover:bg-gray-50 transition">
+                                <i class="fas fa-camera text-gray-500 text-xs"></i>
+                            </button>
+                        </div>
+                        <div>
+                            <p class="font-bold text-gray-800">{{ Auth::user()->name }}</p>
+                            <p class="text-sm text-gray-500">{{ Auth::user()->email }}</p>
+                        </div>
+                    </div>
+                    
+                    <form id="owner-profile-form" class="space-y-4">
+                        @csrf
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Nama Lengkap</label>
-                                <input type="text" value="{{ Auth::user()->name }}" class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-mangkos-main outline-none transition">
+                                <input type="text" name="name" value="{{ Auth::user()->name }}" required class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-mangkos-main outline-none transition">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
@@ -228,15 +298,9 @@
                             </div>
                         </div>
                         
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Nomor WhatsApp</label>
-                                <input type="text" placeholder="08xxxxxxxxxx" class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-mangkos-main outline-none transition">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Alamat</label>
-                                <input type="text" placeholder="Alamat lengkap" class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-mangkos-main outline-none transition">
-                            </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nomor WhatsApp <span class="text-red-500">*</span></label>
+                            <input type="text" name="phone" value="{{ Auth::user()->phone }}" placeholder="08xxxxxxxxxx" required class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-mangkos-main outline-none transition">
                         </div>
                         
                         <div class="flex gap-3 pt-4">
@@ -255,11 +319,21 @@
                         Verifikasi KTP
                     </h4>
                     
+                    @php
+                        $profileComplete = Auth::user()->phone;
+                    @endphp
+                    
+                    @if(!$profileComplete)
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                        <p class="text-sm text-yellow-700 font-medium"><i class="fas fa-exclamation-triangle mr-2"></i>Lengkapi nomor WhatsApp terlebih dahulu sebelum upload KTP</p>
+                    </div>
+                    @else
                     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                         <p class="text-sm text-blue-700">Upload foto KTP untuk verifikasi identitas sebagai pemilik kost</p>
                     </div>
+                    @endif
                     
-                    <form id="ktpForm" enctype="multipart/form-data">
+                    <form id="ktpForm" enctype="multipart/form-data" {{ !$profileComplete ? 'style=pointer-events:none;opacity:0.5' : '' }}>
                         @csrf
                         <div class="space-y-6">
                             <!-- ID Card Photo -->
@@ -507,13 +581,16 @@
                     @foreach($rentalApplications as $application)
                     <div class="border border-gray-200 rounded-xl p-4 hover:bg-gray-50 transition">
                         <div class="flex items-start gap-4">
-                            <img src="https://ui-avatars.com/api/?name={{ urlencode($application->user->name) }}&background=random&color=fff" class="w-12 h-12 rounded-full">
+                            <img src="{{ $application->user->profile_photo ? asset('uploads/profiles/' . $application->user->profile_photo) : 'https://ui-avatars.com/api/?name=' . urlencode($application->user->name) . '&background=random&color=fff' }}" class="w-12 h-12 rounded-full object-cover">
                             <div class="flex-1">
                                 <h4 class="font-bold text-gray-800">{{ $application->user->name }}</h4>
                                 <p class="text-sm text-gray-600">{{ $application->user->email }}</p>
                                 <p class="text-sm text-gray-500 mt-1">Kost: <strong>{{ $application->kost->name }}</strong></p>
-                                <p class="text-xs text-gray-400 mt-1">Kode: <span class="font-mono bg-yellow-100 px-2 py-1 rounded">{{ $application->message }}</span></p>
-                                <p class="text-xs text-gray-400 mt-1">{{ $application->created_at->diffForHumans() }}</p>
+                                <p class="text-xs text-gray-400 mt-1">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    {{ $application->created_at->format('d M Y H:i') }}
+                                </p>
+                                <p class="text-xs text-gray-400">{{ $application->created_at->diffForHumans() }}</p>
                             </div>
                             <div class="flex flex-col gap-2">
                                 @if($application->status === 'pending')
@@ -546,6 +623,75 @@
 
     <!-- SCRIPTS -->
     <script>
+        // Owner profile photo upload
+        document.getElementById('owner-photo-upload')?.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            if (file.size > 2048000) {
+                alert('Ukuran file terlalu besar! Maksimal 2MB');
+                e.target.value = '';
+                return;
+            }
+            
+            if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
+                alert('Format file tidak didukung! Gunakan JPG, PNG, atau JPEG');
+                e.target.value = '';
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('photo', file);
+            
+            fetch('/owner/profile/photo', {
+                method: 'POST',
+                body: formData,
+                headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'}
+            })
+            .then(r => {
+                if (!r.ok) throw new Error('Upload gagal');
+                return r.json();
+            })
+            .then(data => {
+                if(data.success) {
+                    document.getElementById('owner-profile-photo').src = '/uploads/profiles/' + data.photo;
+                    alert('Foto profil berhasil diperbarui!');
+                } else {
+                    throw new Error(data.message || 'Upload gagal');
+                }
+            })
+            .catch(error => {
+                alert('Gagal mengupload foto: ' + error.message);
+            });
+        });
+        
+        // Owner profile form submission
+        document.getElementById('owner-profile-form')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            fetch('/owner/profile/update', {
+                method: 'POST',
+                body: formData,
+                headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'}
+            })
+            .then(r => {
+                if (!r.ok) throw new Error('Update gagal');
+                return r.json();
+            })
+            .then(data => {
+                if(data.success) {
+                    alert('Profil berhasil diperbarui!');
+                    location.reload();
+                } else {
+                    throw new Error(data.message || 'Update gagal');
+                }
+            })
+            .catch(error => {
+                alert('Terjadi kesalahan: ' + error.message);
+            });
+        });
+        
         function openModal(modalId) {
             document.getElementById(modalId).classList.remove('hidden');
         }
@@ -641,27 +787,27 @@
 
         document.getElementById('addKostForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            
             const formData = new FormData(this);
             
             fetch('{{ route("owner.kosts.store") }}', {
                 method: 'POST',
                 body: formData,
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                }
+                headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'}
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) throw new Error('Gagal menambahkan kost');
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
+                    alert('Kost berhasil ditambahkan!');
                     location.reload();
                 } else {
-                    alert('Error: ' + data.message);
+                    throw new Error(data.message || 'Gagal menambahkan kost');
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                alert('Terjadi kesalahan. Silakan coba lagi.');
+                alert('Terjadi kesalahan: ' + error.message);
             });
         });
 
@@ -706,11 +852,12 @@
             fetch('{{ route("owner.ktp.upload") }}', {
                 method: 'POST',
                 body: formData,
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                }
+                headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'}
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) throw new Error('Upload gagal');
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     btn.innerHTML = '<i class="fas fa-check mr-2"></i> Terkirim';
@@ -718,14 +865,11 @@
                     btn.classList.add('bg-green-600');
                     alert('Berhasil dikirim! Admin akan memverifikasi dalam 1x24 jam.');
                 } else {
-                    alert('Error: ' + data.message);
-                    btn.innerHTML = '<i class="fas fa-shield-check mr-2"></i> Kirim Verifikasi KTP';
-                    btn.disabled = false;
+                    throw new Error(data.message || 'Upload gagal');
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                alert('Terjadi kesalahan. Silakan coba lagi.');
+                alert('Terjadi kesalahan: ' + error.message);
                 btn.innerHTML = '<i class="fas fa-shield-check mr-2"></i> Kirim Verifikasi KTP';
                 btn.disabled = false;
             });
@@ -782,13 +926,19 @@
                     'Content-Type': 'application/json'
                 }
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) throw new Error('Gagal mengubah status');
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     location.reload();
                 } else {
-                    alert('Error: ' + data.message);
+                    throw new Error(data.message || 'Gagal mengubah status');
                 }
+            })
+            .catch(error => {
+                alert('Terjadi kesalahan: ' + error.message);
             });
         }
 
@@ -993,25 +1143,59 @@
                     'Content-Type': 'application/json'
                 }
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) throw new Error('Gagal menyetujui');
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
+                    alert('Pengajuan berhasil disetujui!');
                     location.reload();
                 } else {
-                    alert('Error: ' + data.message);
+                    throw new Error(data.message || 'Gagal menyetujui');
                 }
+            })
+            .catch(error => {
+                alert('Terjadi kesalahan: ' + error.message);
             });
         }
 
         function rejectRental(applicationId) {
-            if (!confirm('Tolak pengajuan sewa ini?')) return;
+            const reasons = [
+                'Kamar tidak tersedia',
+                'Tidak memenuhi syarat',
+                'Sudah ada penyewa lain',
+                'Profil tidak sesuai'
+            ];
+            
+            let reasonHtml = reasons.map(r => `<option value="${r}">${r}</option>`).join('');
+            
+            const customReason = prompt(
+                'Pilih alasan penolakan:\n' +
+                '1. Kamar tidak tersedia\n' +
+                '2. Tidak memenuhi syarat\n' +
+                '3. Sudah ada penyewa lain\n' +
+                '4. Profil tidak sesuai\n' +
+                '5. Lainnya (ketik alasan)\n\n' +
+                'Masukkan nomor (1-4) atau ketik alasan custom:'
+            );
+            
+            if (!customReason) return;
+            
+            let reason;
+            if (customReason === '1') reason = reasons[0];
+            else if (customReason === '2') reason = reasons[1];
+            else if (customReason === '3') reason = reasons[2];
+            else if (customReason === '4') reason = reasons[3];
+            else reason = customReason;
             
             fetch(`/owner/rental/${applicationId}/reject`, {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
                     'Content-Type': 'application/json'
-                }
+                },
+                body: JSON.stringify({ reason: reason })
             })
             .then(response => response.json())
             .then(data => {

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use App\Models\Notification;
 
 class AdminController extends Controller
 {
@@ -63,6 +64,14 @@ class AdminController extends Controller
             $user->status = 'approved';
             $user->save();
             
+            // Create notification
+            Notification::create([
+                'user_id' => $user->id,
+                'type' => 'profile_verification',
+                'title' => 'Profil Disetujui',
+                'message' => 'Selamat! Profil Anda telah diverifikasi dan disetujui.',
+            ]);
+            
             return response()->json(['success' => true, 'message' => 'User approved successfully']);
         }
         
@@ -77,6 +86,17 @@ class AdminController extends Controller
             $user->status = 'rejected';
             $user->save();
             
+            $reason = request('reason', 'Dokumen tidak valid');
+            
+            // Create notification
+            Notification::create([
+                'user_id' => $user->id,
+                'type' => 'profile_verification',
+                'title' => 'Profil Ditolak',
+                'message' => 'Maaf, profil Anda ditolak. Silakan periksa kembali dokumen verifikasi Anda.',
+                'rejection_reason' => $reason,
+            ]);
+            
             return response()->json(['success' => true, 'message' => 'User rejected successfully']);
         }
         
@@ -89,6 +109,15 @@ class AdminController extends Controller
         $kost->status = 'approved';
         $kost->save();
         
+        // Notify owner
+        Notification::create([
+            'user_id' => $kost->owner_id,
+            'type' => 'kost_verification',
+            'title' => 'Kost Disetujui',
+            'message' => 'Kost "' . $kost->name . '" telah disetujui dan sekarang terlihat publik.',
+            'related_id' => $kost->id,
+        ]);
+        
         return response()->json(['success' => true, 'message' => 'Kost approved successfully']);
     }
 
@@ -97,6 +126,18 @@ class AdminController extends Controller
         $kost = \App\Models\Kost::findOrFail($id);
         $kost->status = 'rejected';
         $kost->save();
+        
+        $reason = request('reason', 'Informasi tidak lengkap');
+        
+        // Notify owner
+        Notification::create([
+            'user_id' => $kost->owner_id,
+            'type' => 'kost_verification',
+            'title' => 'Kost Ditolak',
+            'message' => 'Kost "' . $kost->name . '" ditolak. Silakan periksa kembali informasi yang diberikan.',
+            'related_id' => $kost->id,
+            'rejection_reason' => $reason,
+        ]);
         
         return response()->json(['success' => true, 'message' => 'Kost rejected successfully']);
     }

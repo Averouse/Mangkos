@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Kost;
 use App\Models\RentalApplication;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Auth;
 use Str;
@@ -36,6 +37,14 @@ class KostController extends Controller
     
     public function applyRental(Request $request)
     {
+        // Check if user is verified
+        if (Auth::user()->status !== 'approved') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda harus terverifikasi terlebih dahulu untuk mengajukan sewa'
+            ]);
+        }
+        
         $validated = $request->validate([
             'kost_id' => 'required|exists:kosts,id'
         ]);
@@ -52,22 +61,27 @@ class KostController extends Controller
             ]);
         }
         
-        // Generate validation code
-        $validationCode = 'MKS-' . strtoupper(Str::random(8));
-        
         // Create rental application
         $application = RentalApplication::create([
             'user_id' => Auth::id(),
             'kost_id' => $validated['kost_id'],
             'status' => 'pending',
-            'message' => $validationCode
         ]);
         
         $kost = Kost::with('owner')->findOrFail($validated['kost_id']);
         
+        // Notify owner
+        Notification::create([
+            'user_id' => $kost->owner_id,
+            'type' => 'rental_application',
+            'title' => 'Pengajuan Sewa Baru',
+            'message' => Auth::user()->name . ' mengajukan sewa untuk ' . $kost->name,
+            'related_id' => $application->id,
+        ]);
+        
         return response()->json([
             'success' => true,
-            'validation_code' => $validationCode,
+            'application_time' => $application->created_at->format('d M Y H:i'),
             'kost_name' => $kost->name,
             'owner_name' => $kost->owner->name,
             'owner_phone' => $kost->owner->phone,

@@ -56,7 +56,7 @@
             <a href="{{ route('landing') }}" class="md:hidden absolute top-4 left-4 text-gray-400 hover:text-mangkos-main transition"><i class="fas fa-arrow-left text-xl"></i></a>
             
             <div class="flex items-center gap-3 mb-8 justify-center md:justify-start">
-                <div class="w-10 h-10 bg-mangkos-main rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-green-200">M</div>
+                <img src="{{ asset('images/mangkos_icon.png') }}" alt="Mangkos" class="w-10 h-10 rounded-xl shadow-lg shadow-green-200">
                 <div>
                     <span class="text-xl font-bold text-gray-800 block leading-none">Mangkos</span>
                     <span class="text-[10px] text-gray-400 font-medium tracking-wider">SECURE LOGIN</span>

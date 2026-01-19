@@ -11,8 +11,8 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
 protected $fillable = [
-    'name', 'email', 'password', 'role', 'status', 'phone', 'campus', 'major', 'year', 
-    'photo', 'ktp_photo', 'id_card_photo', 'selfie_with_id_photo'
+    'name', 'email', 'password', 'role', 'status', 'phone', 'address', 'campus', 'major', 'year', 
+    'profile_photo', 'ktp_photo', 'id_card_photo', 'selfie_with_id_photo'
 ];
 
 
@@ -52,5 +52,10 @@ protected $fillable = [
     public function matchesAsUser2()
     {
         return $this->hasMany(UserMatch::class, 'user2_id');
+    }
+    
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class);
     }
 }

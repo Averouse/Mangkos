@@ -30,7 +30,7 @@
                 <div class="md:hidden mr-2 text-gray-500">
                     <i class="fas fa-arrow-left text-xl"></i>
                 </div>
-                <div class="w-8 h-8 bg-mangkos-main rounded-lg flex items-center justify-center text-white font-bold">M</div>
+                <img src="{{ asset('images/mangkos_icon.png') }}" alt="Mangkos" class="w-8 h-8 rounded-lg shadow-sm">
                 <span class="text-xl font-bold text-mangkos-dark tracking-tight hidden md:block">Mangkos</span>
             </a>
             <div class="hidden md:flex items-center gap-8 text-sm font-medium text-gray-500">
@@ -170,7 +170,7 @@
                 
                 <div class="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
                     <div class="flex items-center gap-3">
-                        <img src="https://ui-avatars.com/api/?name={{ $kost->owner->name }}&background=0D8ABC&color=fff" class="w-12 h-12 rounded-full">
+                        <img src="{{ $kost->owner->profile_photo ? asset('uploads/profiles/' . $kost->owner->profile_photo) : 'https://ui-avatars.com/api/?name=' . urlencode($kost->owner->name) . '&background=0D8ABC&color=fff' }}" class="w-12 h-12 rounded-full object-cover">
                         <div>
                             <p class="font-bold text-gray-800">{{ $kost->owner->name }}</p>
                             <p class="text-xs text-gray-500">Pemilik Kost</p>
@@ -208,13 +208,17 @@
 
                     <div class="space-y-3">
                         @auth
-                        @if(!$kost->is_full)
-                        <button onclick="openRentalModal()" class="w-full bg-mangkos-main hover:bg-mangkos-dark text-white font-bold py-3 rounded-xl transition shadow-lg shadow-green-200">
-                            Ajukan Sewa
+                        @if(Auth::user()->status !== 'approved')
+                        <button disabled class="w-full bg-gray-300 text-gray-500 font-bold py-3 rounded-xl cursor-not-allowed">
+                            <i class="fas fa-lock mr-2"></i>Perlu Verifikasi
                         </button>
-                        @else
+                        @elseif($kost->is_full)
                         <button disabled class="w-full bg-gray-300 text-gray-500 font-bold py-3 rounded-xl cursor-not-allowed">
                             Kost Penuh
+                        </button>
+                        @else
+                        <button onclick="openRentalModal()" class="w-full bg-mangkos-main hover:bg-mangkos-dark text-white font-bold py-3 rounded-xl transition shadow-lg shadow-green-200">
+                            Ajukan Sewa
                         </button>
                         @endif
                         @else
@@ -260,13 +264,17 @@
             @endif
             
             @auth
-            @if(!$kost->is_full)
-            <button onclick="openRentalModal()" class="bg-mangkos-main text-white font-bold px-6 py-2 rounded-xl shadow-lg shadow-green-100">
-                Sewa
+            @if(Auth::user()->status !== 'approved')
+            <button disabled class="bg-gray-300 text-gray-500 font-bold px-6 py-2 rounded-xl cursor-not-allowed">
+                <i class="fas fa-lock"></i>
             </button>
-            @else
+            @elseif($kost->is_full)
             <button disabled class="bg-gray-300 text-gray-500 font-bold px-6 py-2 rounded-xl cursor-not-allowed">
                 Penuh
+            </button>
+            @else
+            <button onclick="openRentalModal()" class="bg-mangkos-main text-white font-bold px-6 py-2 rounded-xl shadow-lg shadow-green-100">
+                Sewa
             </button>
             @endif
             @else
@@ -304,11 +312,11 @@
                 <h3 class="text-xl font-bold text-gray-800">Pengajuan Berhasil!</h3>
             </div>
             
-            <div class="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4 mb-4">
-                <p class="text-sm text-yellow-800 font-medium mb-3">⚠️ PENTING: Screenshot kode ini dan kirim ke pemilik kost via WhatsApp</p>
-                <div class="bg-white rounded-lg p-4 text-center">
-                    <p class="text-xs text-gray-500 mb-1">Kode Validasi</p>
-                    <p id="validationCode" class="text-2xl font-bold text-mangkos-main tracking-wider"></p>
+            <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-4">
+                <p class="text-sm text-blue-800 font-medium mb-3">Pengajuan Anda telah dikirim ke pemilik kost</p>
+                <div class="bg-white rounded-lg p-4">
+                    <p class="text-xs text-gray-500 mb-1">Waktu Pengajuan</p>
+                    <p id="applicationTime" class="text-lg font-bold text-gray-800"></p>
                 </div>
             </div>
             
@@ -359,12 +367,12 @@
                 closeRentalModal();
                 
                 if (data.success) {
-                    document.getElementById('validationCode').textContent = data.validation_code;
+                    document.getElementById('applicationTime').textContent = data.application_time;
                     document.getElementById('userName').textContent = data.user_name;
                     document.getElementById('kostName').textContent = data.kost_name;
                     document.getElementById('ownerName').textContent = data.owner_name;
                     
-                    const waMessage = `Halo, saya ${data.user_name}. Saya ingin menyewa kost ${data.kost_name}. Kode Validasi: ${data.validation_code}`;
+                    const waMessage = `Halo, saya ${data.user_name}. Saya ingin menyewa kost ${data.kost_name}. Waktu pengajuan: ${data.application_time}`;
                     const waLink = `https://wa.me/${data.owner_phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(waMessage)}`;
                     document.getElementById('whatsappBtn').href = waLink;
                     

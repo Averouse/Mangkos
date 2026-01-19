@@ -11,7 +11,7 @@
 
     <div class="w-full max-w-sm bg-gray-800 p-8 rounded-2xl shadow-2xl border border-gray-700">
         <div class="text-center mb-8">
-            <div class="w-12 h-12 bg-red-600 rounded-lg flex items-center justify-center text-white font-bold text-xl mx-auto mb-4 shadow-lg shadow-red-500/50">A</div>
+            <img src="{{ asset('images/mangkos_icon.png') }}" alt="Admin Panel" class="w-12 h-12 rounded-lg mx-auto mb-4 shadow-lg shadow-red-500/50">
             <h2 class="text-xl font-bold text-white">Admin Panel</h2>
             <p class="text-xs text-gray-400 mt-1">Hanya untuk personel berwenang</p>
         </div>

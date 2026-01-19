@@ -7,6 +7,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\OwnerController;
 use App\Http\Controllers\KostController;
 use App\Http\Controllers\MatchmakingController;
+use App\Http\Controllers\NotificationController;
 
 // Landing page
 Route::get('/', function () {
@@ -39,6 +40,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/owner/ktp-upload', [OwnerController::class, 'uploadKtp'])->name('owner.ktp.upload');
     // Add this inside the protected routes section
     Route::post('/user/ktm-upload', [AuthController::class, 'uploadKtm'])->name('user.ktm.upload');
+    Route::post('/user/profile/update', [AuthController::class, 'updateProfile'])->name('user.profile.update');
+    Route::post('/user/profile/photo', [AuthController::class, 'uploadProfilePhoto'])->name('user.profile.photo');
+    Route::post('/owner/profile/update', [OwnerController::class, 'updateProfile'])->name('owner.profile.update');
+    Route::post('/owner/profile/photo', [OwnerController::class, 'uploadProfilePhoto'])->name('owner.profile.photo');
     Route::post('/owner/kosts/{id}/toggle-full', [OwnerController::class, 'toggleFull'])->name('owner.kosts.toggle-full');
     Route::post('/owner/kosts/{id}/update', [OwnerController::class, 'update'])->name('owner.kosts.update');
     Route::post('/owner/rental/{id}/approve', [OwnerController::class, 'approveRental'])->name('owner.rental.approve');
@@ -53,6 +58,11 @@ Route::middleware('auth')->group(function () {
     
     // Rental Application routes
     Route::post('/rental/apply', [KostController::class, 'applyRental'])->name('rental.apply');
+    
+    // Notification routes
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.readAll');
 });
 
 // Admin routes

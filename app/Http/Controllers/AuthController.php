@@ -49,7 +49,8 @@ class AuthController extends Controller
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'role' => $validated['role']
+            'role' => $validated['role'],
+            'status' => 'unverified'
         ]);
 
         Auth::login($user);
@@ -61,6 +62,11 @@ class AuthController extends Controller
     {
         if (Auth::user()->role !== 'user') {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+        
+        // Check profile completion
+        if (!Auth::user()->phone || !Auth::user()->campus || !Auth::user()->major || !Auth::user()->year) {
+            return response()->json(['success' => false, 'message' => 'Lengkapi profil terlebih dahulu'], 400);
         }
         
         $request->validate([
@@ -85,6 +91,36 @@ class AuthController extends Controller
         ]);
         
         return response()->json(['success' => true, 'message' => 'KTM verification photos uploaded successfully']);
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'required|string|max:20',
+            'campus' => 'required|string|max:255',
+            'major' => 'required|string|max:255',
+            'year' => 'required|integer|min:1900|max:2100'
+        ]);
+        
+        Auth::user()->update($validated);
+        
+        return response()->json(['success' => true]);
+    }
+
+    public function uploadProfilePhoto(Request $request)
+    {
+        $request->validate([
+            'photo' => 'required|image|mimes:jpeg,png,jpg|max:2048'
+        ]);
+        
+        $file = $request->file('photo');
+        $filename = time() . '_profile_' . $file->getClientOriginalName();
+        $file->move(public_path('uploads/profiles'), $filename);
+        
+        Auth::user()->update(['profile_photo' => $filename]);
+        
+        return response()->json(['success' => true, 'photo' => $filename]);
     }
 
     public function logout(Request $request)

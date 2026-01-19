@@ -7,20 +7,46 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        mangkos: { light: '#6ee7b7', main: '#10b981', dark: '#047857', accent: '#0f766e' }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
         body { font-family: 'Poppins', sans-serif; }
     </style>
 </head>
 <body class="bg-gray-50">
-    <nav class="bg-white border-b border-gray-100 shadow-sm">
-        <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
-            <a href="{{ route('landing') }}" class="flex items-center gap-2">
-                <div class="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center text-white font-bold">M</div>
-                <span class="text-xl font-bold text-gray-800">Mangkos</span>
-            </a>
-            <a href="{{ route('dashboard') }}" class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 transition">
-                <i class="fas fa-user text-sm"></i>
-            </a>
+    <nav class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-200 shadow-sm">
+        <div class="px-4 py-3 flex justify-between items-center max-w-6xl mx-auto">
+            <div class="flex items-center gap-2">
+                <img src="{{ asset('images/mangkos_icon.png') }}" alt="Mangkos" class="w-8 h-8 rounded-lg shadow-md">
+                <span class="text-xl font-bold text-mangkos-dark tracking-tight">Mangkos</span>
+            </div>
+            
+            <!-- Navigation Menu -->
+            <div class="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
+                <a href="{{ route('dashboard') }}" class="hover:text-mangkos-main transition">Dashboard</a>
+                <a href="{{ route('kost.search') }}" class="hover:text-mangkos-main transition">Pencarian Kos</a>
+                <a href="{{ route('matchmaking.index') }}" class="text-mangkos-main font-semibold">Matchmaking</a>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <span class="text-sm text-gray-600 hidden sm:block">{{ Auth::user()->name }}</span>
+                <form method="POST" action="{{ route('logout') }}" class="inline">
+                    @csrf
+                    <button type="submit" class="text-gray-400 hover:text-red-500 transition p-2 rounded-lg hover:bg-red-50" title="Keluar">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </form>
+            </div>
         </div>
     </nav>
 
@@ -29,7 +55,7 @@
             <div class="inline-block px-4 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold mb-2">
                 <i class="fas fa-check-circle"></i> Hasil Rekomendasi
             </div>
-            <h1 class="text-3xl font-bold text-gray-800 mb-2">Partner <span class="text-green-500">Terbaik</span></h1>
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Partner <span class="text-green-700">Terbaik</span></h1>
             <p class="text-gray-500 text-sm">{{ $kost->name }}</p>
         </div>
 
@@ -58,7 +84,7 @@
             @endphp
             <div class="p-4 rounded-2xl border-2 {{ $borderClass }} shadow-sm flex gap-4 items-center">
                 <div class="relative">
-                    <img src="https://ui-avatars.com/api/?name={{ urlencode($partner->name) }}&background=random&color=fff" class="w-16 h-16 rounded-full border-2 border-white shadow">
+                    <img src="{{ $partner->profile_photo ? asset('uploads/profiles/' . $partner->profile_photo) : 'https://ui-avatars.com/api/?name=' . urlencode($partner->name) . '&background=random&color=fff' }}" class="w-16 h-16 rounded-full border-2 border-white shadow object-cover">
                     <div class="absolute -bottom-1 -right-1 {{ $badgeColor }} text-white text-xs font-bold px-2 py-0.5 rounded-full border-2 border-white">
                         {{ $score }}%
                     </div>
@@ -93,9 +119,14 @@
         </div>
         @endif
 
-        <div class="mt-8 text-center">
-            <a href="{{ route('matchmaking.index') }}" class="text-green-500 font-semibold hover:underline">
-                <i class="fas fa-redo mr-1"></i> Ulangi Kuesioner
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <a href="{{ route('matchmaking.index') }}" class="flex items-center justify-center gap-2 bg-mangkos-main text-white font-semibold py-3 px-6 rounded-xl hover:bg-mangkos-dark transition shadow-md">
+                <i class="fas fa-redo"></i>
+                <span>Ulangi Kuesioner</span>
+            </a>
+            <a href="{{ route('dashboard') }}" class="flex items-center justify-center gap-2 bg-white text-gray-700 font-semibold py-3 px-6 rounded-xl hover:bg-gray-50 transition shadow-md border border-gray-200">
+                <i class="fas fa-arrow-left"></i>
+                <span>Kembali ke Dashboard</span>
             </a>
         </div>
     </main>
@@ -181,7 +212,8 @@
                 'major' => $partner->major,
                 'email' => $partner->email,
                 'campus' => $partner->campus,
-                'year' => $partner->year
+                'year' => $partner->year,
+                'profile_photo' => $partner->profile_photo
             ];
         })) !!};
         
@@ -189,7 +221,10 @@
             const user = users.find(u => u.id === userId);
             if (!user) return;
             
-            document.getElementById('profileAvatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff&size=200`;
+            const photoUrl = user.profile_photo 
+                ? '/uploads/profiles/' + user.profile_photo
+                : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff&size=200`;
+            document.getElementById('profileAvatar').src = photoUrl;
             document.getElementById('profileName').textContent = user.name;
             document.getElementById('profilePhone').textContent = user.phone || 'Tidak tersedia';
             document.getElementById('profileMajor').textContent = user.major || 'Tidak tersedia';

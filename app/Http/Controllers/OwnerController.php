@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Kost;
 use App\Models\RentalApplication;
+use App\Models\Notification;
 
 class OwnerController extends Controller
 {
@@ -79,6 +80,11 @@ class OwnerController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
         
+        // Check profile completion
+        if (!Auth::user()->phone) {
+            return response()->json(['success' => false, 'message' => 'Lengkapi nomor WhatsApp terlebih dahulu'], 400);
+        }
+        
         $request->validate([
             'id_card_photo' => 'required|image|mimes:jpeg,png,jpg|max:2048',
             'selfie_with_id_photo' => 'required|image|mimes:jpeg,png,jpg|max:2048'
@@ -101,6 +107,33 @@ class OwnerController extends Controller
         ]);
         
         return response()->json(['success' => true, 'message' => 'KTP verification photos uploaded successfully']);
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'required|string|max:20'
+        ]);
+        
+        Auth::user()->update($validated);
+        
+        return response()->json(['success' => true]);
+    }
+
+    public function uploadProfilePhoto(Request $request)
+    {
+        $request->validate([
+            'photo' => 'required|image|mimes:jpeg,png,jpg|max:2048'
+        ]);
+        
+        $file = $request->file('photo');
+        $filename = time() . '_profile_' . $file->getClientOriginalName();
+        $file->move(public_path('uploads/profiles'), $filename);
+        
+        Auth::user()->update(['profile_photo' => $filename]);
+        
+        return response()->json(['success' => true, 'photo' => $filename]);
     }
 
     public function toggleFull($id)
@@ -168,6 +201,15 @@ class OwnerController extends Controller
         $application->status = 'approved';
         $application->save();
         
+        // Create notification
+        Notification::create([
+            'user_id' => $application->user_id,
+            'type' => 'rental_status',
+            'title' => 'Pengajuan Kos Disetujui',
+            'message' => 'Pengajuan Anda untuk ' . $application->kost->name . ' telah disetujui!',
+            'related_id' => $application->kost_id,
+        ]);
+        
         return response()->json(['success' => true]);
     }
     
@@ -181,6 +223,18 @@ class OwnerController extends Controller
         
         $application->status = 'rejected';
         $application->save();
+        
+        $reason = request('reason', 'Kamar tidak tersedia');
+        
+        // Create notification
+        Notification::create([
+            'user_id' => $application->user_id,
+            'type' => 'rental_status',
+            'title' => 'Pengajuan Kos Ditolak',
+            'message' => 'Maaf, pengajuan Anda untuk ' . $application->kost->name . ' ditolak.',
+            'related_id' => $application->kost_id,
+            'rejection_reason' => $reason,
+        ]);
         
         return response()->json(['success' => true]);
     }

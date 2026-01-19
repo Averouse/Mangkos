@@ -52,8 +52,8 @@
         <div class="px-4 py-3 flex justify-between items-center max-w-7xl mx-auto w-full">
             <div class="flex items-center gap-8">
                 <a href="{{ route('dashboard') }}" class="flex items-center gap-2">
-                     <div class="w-8 h-8 bg-mangkos-main rounded-lg flex items-center justify-center text-white font-bold">M</div>
-                     <span class="text-xl font-bold text-mangkos-dark tracking-tight hidden lg:block">Mangkos</span>
+                    <img src="{{ asset('images/mangkos_icon.png') }}" alt="Mangkos" class="w-8 h-8 rounded-lg shadow-sm">
+                    <span class="text-xl font-bold text-mangkos-dark tracking-tight hidden lg:block">Mangkos</span>
                 </a>
             </div>
             
@@ -158,11 +158,11 @@
                         <label class="text-xs font-bold text-gray-600 mb-2 block">Harga per Bulan</label>
                         <select id="priceFilter" onchange="applyFilters()" class="w-full px-3 py-2 text-xs rounded-lg border border-gray-300 focus:border-mangkos-main outline-none">
                             <option value="all">Semua Harga</option>
-                            <option value="0-500000">< Rp 500rb</option>
-                            <option value="500000-1000000">Rp 500rb - 1jt</option>
-                            <option value="1000000-1500000">Rp 1jt - 1.5jt</option>
-                            <option value="1500000-2000000">Rp 1.5jt - 2jt</option>
-                            <option value="2000000-999999999">> Rp 2jt</option>
+                            <option value="0-500000">< Rp 500.000</option>
+                            <option value="500000-1000000">Rp 500.000 - 1.000.000</option>
+                            <option value="1000000-1500000">Rp 1.000.000 - 1.500.000</option>
+                            <option value="1500000-2000000">Rp 1.500.000 - 2.000.000</option>
+                            <option value="2000000-999999999">> Rp 2.000.000</option>
                         </select>
                     </div>
                 </div>
@@ -248,7 +248,7 @@
                                     <h3 class="font-bold text-gray-800 text-sm md:text-base truncate">{{ $kost->name }}</h3>
                                     <p class="text-xs text-gray-500 mt-1 line-clamp-1">
                                         @if($kost->facilities && count($kost->facilities) > 0)
-                                            {{ implode(' • ', array_slice($kost->facilities, 0, 3)) }}
+                                            {{ implode(' • ', array_map(fn($f) => ucwords(str_replace('_', ' ', $f)), array_slice($kost->facilities, 0, 3))) }}
                                         @else
                                             {{ Str::limit($kost->address, 30) }}
                                         @endif
@@ -256,7 +256,7 @@
                                     <div class="distance-badge hidden mt-1"></div>
                                 </div>
                                 <div class="mt-2 flex justify-between items-end">
-                                    <span class="text-mangkos-dark font-bold text-sm md:text-base">Rp {{ number_format($kost->price/1000, 0) }}rb</span>
+                                    <span class="text-mangkos-dark font-bold text-sm md:text-base">Rp {{ number_format($kost->price, 0, ',', '.') }}</span>
                                     <span class="text-[10px] text-gray-400">{{ $kost->total_rooms }} kamar</span>
                                 </div>
                             </div>

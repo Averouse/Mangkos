@@ -14,7 +14,7 @@
     <!-- SIDEBAR -->
     <aside class="w-64 bg-gray-900 text-white flex flex-col shadow-xl h-full">
         <div class="p-6 border-b border-gray-700 flex items-center gap-3 flex-shrink-0">
-            <div class="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center text-white font-bold shadow-lg">A</div>
+            <img src="{{ asset('images/mangkos_icon.png') }}" alt="Admin Panel" class="w-8 h-8 rounded-lg shadow-lg">
             <div>
                 <span class="text-lg font-bold block leading-none">Admin Panel</span>
                 <span class="text-xs text-gray-400 tracking-wider uppercase">Mangkos</span>
@@ -58,7 +58,7 @@
             </a>
 
             <a href="#" onclick="switchTab('approved-kosts')" id="nav-approved-kosts" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:bg-gray-800 hover:text-white rounded-xl font-medium transition group">
-                <i class="fas fa-building-check w-5 group-hover:text-green-400"></i> Approved Kosts
+                <i class="fas fa-building w-5 group-hover:text-green-400"></i> Approved Kosts
                 <span class="ml-auto bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">{{ $approvedKosts->count() ?? 0 }}</span>
             </a>
 
@@ -96,33 +96,99 @@
             <!-- DASHBOARD VIEW -->
             <div id="view-dashboard" class="block">
                 <!-- Stats Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                         <div class="text-gray-400 text-xs font-bold uppercase mb-2">Total Users</div>
                         <div class="text-3xl font-bold text-gray-800">{{ $totalUsers }}</div>
-                        <div class="text-xs text-gray-500 mt-1">Registered users</div>
+                        <div class="text-xs text-gray-500 mt-1">All registered</div>
                     </div>
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                         <div class="text-gray-400 text-xs font-bold uppercase mb-2">Students</div>
                         <div class="text-3xl font-bold text-blue-600">{{ $studentCount }}</div>
-                        <div class="text-xs text-gray-500 mt-1">Role: user</div>
+                        <div class="text-xs text-gray-500 mt-1">Mahasiswa</div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <div class="text-gray-400 text-xs font-bold uppercase mb-2">Owners</div>
+                        <div class="text-3xl font-bold text-orange-600">{{ $ownerCount }}</div>
+                        <div class="text-xs text-gray-500 mt-1">Pemilik kost</div>
                     </div>
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-yellow-500">
                         <div class="text-gray-400 text-xs font-bold uppercase mb-2">Pending</div>
                         <div class="text-3xl font-bold text-yellow-600">{{ $pendingCount }}</div>
-                        <div class="text-xs text-gray-400 mt-1">Need verification</div>
+                        <div class="text-xs text-gray-400 mt-1">Need action</div>
                     </div>
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-green-500">
                         <div class="text-gray-400 text-xs font-bold uppercase mb-2">Approved</div>
                         <div class="text-3xl font-bold text-green-600">{{ $approvedCount }}</div>
-                        <div class="text-xs text-gray-400 mt-1">Verified users</div>
+                        <div class="text-xs text-gray-400 mt-1">Verified</div>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
-                    <i class="fas fa-shield-alt text-6xl text-gray-300 mb-4"></i>
-                    <h3 class="text-xl font-bold text-gray-700 mb-2">Admin Control Center</h3>
-                    <p class="text-gray-500 max-w-md mx-auto">Manage user verifications and monitor system activity. Click on sidebar menu to manage users.</p>
+                <!-- Quick Actions -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-2xl shadow-lg text-white cursor-pointer hover:shadow-xl transition" onclick="switchTab('pending-users')">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <div class="text-sm opacity-90 mb-1">Pending Students</div>
+                                <div class="text-3xl font-bold">{{ $pendingUsers->where('role', 'user')->count() }}</div>
+                            </div>
+                            <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-user-graduate text-2xl"></i>
+                            </div>
+                        </div>
+                        <div class="text-xs opacity-75">Click to review KTM verifications</div>
+                    </div>
+
+                    <div class="bg-gradient-to-br from-orange-500 to-orange-600 p-6 rounded-2xl shadow-lg text-white cursor-pointer hover:shadow-xl transition" onclick="switchTab('pending-owners')">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <div class="text-sm opacity-90 mb-1">Pending Owners</div>
+                                <div class="text-3xl font-bold">{{ $pendingUsers->where('role', 'owner')->count() }}</div>
+                            </div>
+                            <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-id-card text-2xl"></i>
+                            </div>
+                        </div>
+                        <div class="text-xs opacity-75">Click to review KTP verifications</div>
+                    </div>
+
+                    <div class="bg-gradient-to-br from-purple-500 to-purple-600 p-6 rounded-2xl shadow-lg text-white cursor-pointer hover:shadow-xl transition" onclick="switchTab('kost-verification')">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <div class="text-sm opacity-90 mb-1">Pending Kosts</div>
+                                <div class="text-3xl font-bold">{{ $pendingKostCount }}</div>
+                            </div>
+                            <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-building text-2xl"></i>
+                            </div>
+                        </div>
+                        <div class="text-xs opacity-75">Click to review property listings</div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity Summary -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <i class="fas fa-chart-line text-green-500"></i>
+                        System Overview
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="p-4 bg-green-50 rounded-xl">
+                            <div class="text-sm text-gray-600 mb-1">Total Kosts</div>
+                            <div class="text-2xl font-bold text-green-600">{{ $approvedKosts->count() + $pendingKostCount }}</div>
+                            <div class="text-xs text-gray-500 mt-1">{{ $approvedKosts->count() }} approved</div>
+                        </div>
+                        <div class="p-4 bg-blue-50 rounded-xl">
+                            <div class="text-sm text-gray-600 mb-1">Verification Rate</div>
+                            <div class="text-2xl font-bold text-blue-600">{{ $totalUsers > 0 ? round(($approvedCount / $totalUsers) * 100) : 0 }}%</div>
+                            <div class="text-xs text-gray-500 mt-1">Users verified</div>
+                        </div>
+                        <div class="p-4 bg-yellow-50 rounded-xl">
+                            <div class="text-sm text-gray-600 mb-1">Pending Actions</div>
+                            <div class="text-2xl font-bold text-yellow-600">{{ $pendingCount + $pendingKostCount }}</div>
+                            <div class="text-xs text-gray-500 mt-1">Requires attention</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -146,7 +212,7 @@
                                     <tr class="hover:bg-yellow-50/30 transition" id="user-{{ $user->id }}">
                                         <td class="px-6 py-4">
                                             <div class="flex items-center gap-3">
-                                                <img src="https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&background=random" class="w-10 h-10 rounded-full">
+                                                <img src="{{ $user->profile_photo ? asset('uploads/profiles/' . $user->profile_photo) : 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&background=random' }}" class="w-10 h-10 rounded-full object-cover">
                                                 <div>
                                                     <p class="font-bold text-gray-800">{{ $user->name }}</p>
                                                     <p class="text-xs text-gray-500">{{ ucfirst($user->role) }}</p>
@@ -213,7 +279,7 @@
                                     <tr class="hover:bg-green-50/30 transition">
                                         <td class="px-6 py-4">
                                             <div class="flex items-center gap-3">
-                                                <img src="https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&background=10b981&color=fff" class="w-10 h-10 rounded-full">
+                                                <img src="{{ $user->profile_photo ? asset('uploads/profiles/' . $user->profile_photo) : 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&background=10b981&color=fff' }}" class="w-10 h-10 rounded-full object-cover">
                                                 <div>
                                                     <p class="font-bold text-gray-800">{{ $user->name }}</p>
                                                     <p class="text-xs text-gray-500">{{ ucfirst($user->role) }}</p>
@@ -287,7 +353,7 @@
                                     <tr class="hover:bg-blue-50/30 transition" id="user-{{ $user->id }}">
                                         <td class="px-6 py-4">
                                             <div class="flex items-center gap-3">
-                                                <img src="https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&background=3b82f6&color=fff" class="w-10 h-10 rounded-full">
+                                                <img src="{{ $user->profile_photo ? asset('uploads/profiles/' . $user->profile_photo) : 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&background=3b82f6&color=fff' }}" class="w-10 h-10 rounded-full object-cover">
                                                 <div>
                                                     <p class="font-bold text-gray-800">{{ $user->name }}</p>
                                                     <p class="text-xs text-blue-600">Student</p>
@@ -364,7 +430,7 @@
                                     <tr class="hover:bg-orange-50/30 transition" id="user-{{ $user->id }}">
                                         <td class="px-6 py-4">
                                             <div class="flex items-center gap-3">
-                                                <img src="https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&background=f97316&color=fff" class="w-10 h-10 rounded-full">
+                                                <img src="{{ $user->profile_photo ? asset('uploads/profiles/' . $user->profile_photo) : 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&background=f97316&color=fff' }}" class="w-10 h-10 rounded-full object-cover">
                                                 <div>
                                                     <p class="font-bold text-gray-800">{{ $user->name }}</p>
                                                     <p class="text-xs text-orange-600">Owner</p>
@@ -515,7 +581,7 @@
                                     <tr class="hover:bg-green-50/30 transition">
                                         <td class="px-6 py-4">
                                             <div class="flex items-center gap-3">
-                                                <img src="https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&background=10b981&color=fff" class="w-10 h-10 rounded-full">
+                                                <img src="{{ $user->profile_photo ? asset('uploads/profiles/' . $user->profile_photo) : 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&background=10b981&color=fff' }}" class="w-10 h-10 rounded-full object-cover">
                                                 <div>
                                                     <p class="font-bold text-gray-800">{{ $user->name }}</p>
                                                     <p class="text-xs text-green-600">Verified Student</p>
@@ -583,7 +649,7 @@
                                     <tr class="hover:bg-green-50/30 transition">
                                         <td class="px-6 py-4">
                                             <div class="flex items-center gap-3">
-                                                <img src="https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&background=10b981&color=fff" class="w-10 h-10 rounded-full">
+                                                <img src="{{ $user->profile_photo ? asset('uploads/profiles/' . $user->profile_photo) : 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&background=10b981&color=fff' }}" class="w-10 h-10 rounded-full object-cover">
                                                 <div>
                                                     <p class="font-bold text-gray-800">{{ $user->name }}</p>
                                                     <p class="text-xs text-green-600">Verified Owner</p>
@@ -833,32 +899,57 @@
         }
 
         function rejectUser(userId) {
-            if (confirm('Reject this user? This action cannot be undone.')) {
-                fetch(`/admin/users/${userId}/reject`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        document.getElementById(`user-${userId}`).style.opacity = '0';
-                        setTimeout(() => {
-                            document.getElementById(`user-${userId}`).remove();
-                            location.reload(); // Refresh to update counts
-                        }, 300);
-                    } else {
-                        alert('Error: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred. Please try again.');
-                });
-            }
+            const reasons = [
+                'Dokumen tidak valid',
+                'Foto tidak jelas',
+                'Data tidak sesuai',
+                'Dokumen kadaluarsa'
+            ];
+            
+            const customReason = prompt(
+                'Pilih alasan penolakan:\n' +
+                '1. Dokumen tidak valid\n' +
+                '2. Foto tidak jelas\n' +
+                '3. Data tidak sesuai\n' +
+                '4. Dokumen kadaluarsa\n' +
+                '5. Lainnya (ketik alasan)\n\n' +
+                'Masukkan nomor (1-4) atau ketik alasan custom:'
+            );
+            
+            if (!customReason) return;
+            
+            let reason;
+            if (customReason === '1') reason = reasons[0];
+            else if (customReason === '2') reason = reasons[1];
+            else if (customReason === '3') reason = reasons[2];
+            else if (customReason === '4') reason = reasons[3];
+            else reason = customReason;
+            
+            fetch(`/admin/users/${userId}/reject`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ reason: reason })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById(`user-${userId}`).style.opacity = '0';
+                    setTimeout(() => {
+                        document.getElementById(`user-${userId}`).remove();
+                        location.reload();
+                    }, 300);
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
         }
 
         function viewUserDetails(userId) {
@@ -965,32 +1056,57 @@
         }
 
         function rejectKost(kostId) {
-            if (confirm('Reject this kost?')) {
-                fetch(`/admin/kosts/${kostId}/reject`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        document.getElementById(`kost-${kostId}`).style.opacity = '0';
-                        setTimeout(() => {
-                            document.getElementById(`kost-${kostId}`).remove();
-                            location.reload();
-                        }, 300);
-                    } else {
-                        alert('Error: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred. Please try again.');
-                });
-            }
+            const reasons = [
+                'Informasi tidak lengkap',
+                'Foto tidak memadai',
+                'Alamat tidak valid',
+                'Harga tidak wajar'
+            ];
+            
+            const customReason = prompt(
+                'Pilih alasan penolakan:\n' +
+                '1. Informasi tidak lengkap\n' +
+                '2. Foto tidak memadai\n' +
+                '3. Alamat tidak valid\n' +
+                '4. Harga tidak wajar\n' +
+                '5. Lainnya (ketik alasan)\n\n' +
+                'Masukkan nomor (1-4) atau ketik alasan custom:'
+            );
+            
+            if (!customReason) return;
+            
+            let reason;
+            if (customReason === '1') reason = reasons[0];
+            else if (customReason === '2') reason = reasons[1];
+            else if (customReason === '3') reason = reasons[2];
+            else if (customReason === '4') reason = reasons[3];
+            else reason = customReason;
+            
+            fetch(`/admin/kosts/${kostId}/reject`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ reason: reason })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById(`kost-${kostId}`).style.opacity = '0';
+                    setTimeout(() => {
+                        document.getElementById(`kost-${kostId}`).remove();
+                        location.reload();
+                    }, 300);
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
         }
 
         function viewKostDetails(kostId) {
@@ -1068,3 +1184,6 @@
 
 </body>
 </html>
+
+
+
